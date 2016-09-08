@@ -1,12 +1,4 @@
 <?php
-/* connect to database (set driver) */
-if( strpos($_SERVER['HTTP_HOST'], ".dev") !== false ) {
-	$sql = db_connect('pdo','mysql','127.0.0.1','username','password','dbname');
-}
-else {
-	$sql = db_connect('pdo','postgres','127.0.0.1','username','password','dbname',3307);
-}
-
 /* helper functions */
 function db_connect($driver,$engine,$host,$username,$password,$database,$port = 3306) {
 	switch($driver) {
@@ -408,6 +400,15 @@ function db_update($table,$data,$condition) {
     return call_user_func_array('db_query',$args); // returns the affected row counts
 }
 
+/* connect to database (set driver) */
+/*
+if( strpos($_SERVER['HTTP_HOST'], ".dev") !== false ) {
+	$sql = db_connect('pdo','mysql','127.0.0.1','username','password','dbname');
+}
+else {
+	$sql = db_connect('pdo','postgres','127.0.0.1','username','password','dbname',3307);
+}
+*/
 
 /* example code */
 //echo '<pre>';
