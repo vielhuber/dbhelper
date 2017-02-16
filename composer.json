@@ -5,5 +5,5 @@
         "php": "^7.0"
     },
     "license": "MIT",
-    "version": "1.0.0"
+    "minimum-stability": "stable"
 }
