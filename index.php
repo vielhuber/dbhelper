@@ -29,6 +29,7 @@ function db_connect($driver,$engine,$host,$username,$password,$database,$port = 
 		case 'joomla':
 			// TODO
 			break;
+			
 	}
 	$sql->driver = $driver;
 	$sql->engine = $engine;
