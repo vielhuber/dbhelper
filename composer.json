@@ -3,5 +3,6 @@
     "description": "PHP helper function framework for a convenient way of communicating with mysql/pgsql databases.",
     "require": {
         "php": "^7.0"
-    }
+    },
+    "license": "MIT"
 }
