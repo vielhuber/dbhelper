@@ -1,4 +1,12 @@
 <?php
+namespace MyClass;
+class Foo {
+	public static bar() {
+		echo 'baz';
+	}
+}
+
+
 /* helper functions */
 function db_connect($driver,$engine,$host,$username,$password,$database,$port = 3306) {
 	switch($driver) {
