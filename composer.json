@@ -4,5 +4,6 @@
     "require": {
         "php": "^7.0"
     },
-    "license": "MIT"
+    "license": "MIT",
+    "version": "1.0.0"
 }
