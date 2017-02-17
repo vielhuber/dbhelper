@@ -1,5 +1,5 @@
 <?php
-namespace MyClass;
+namespace MyNamespace;
 class Foo {
 	public static bar() {
 		echo 'baz';

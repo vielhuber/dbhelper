@@ -4,5 +4,10 @@
     "require": {
         "php": "^7.0"
     },
-    "license": "MIT"
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+	        "MyNamespace\\": "src/"
+    	}
+    }
 }
