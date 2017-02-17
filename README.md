@@ -1,5 +1,7 @@
 ## installation 
+```
 composer require vielhuber/dbhelper
+```
 
 ## usage
 ```
