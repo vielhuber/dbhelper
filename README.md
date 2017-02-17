@@ -2,6 +2,7 @@
 composer require vielhuber/dbhelper
 
 ## usage
+```
 require __DIR__ . '/vendor/autoload.php';
 use vielhuber\dbhelper\DBHelper;
 $db = new DBHelper();
@@ -17,3 +18,4 @@ print_r($db->query('UPDATE table SET `row1` = ? WHERE ID = ?',1,2));
 $db->insert('tablename',['id'=>1,'name'=>'foo']);
 $db->update('tablename',['col1'=>'foo','col2'=>'bar'],['id'=>1]);
 echo '</pre>';
+```
