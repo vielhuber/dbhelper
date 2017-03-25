@@ -3,7 +3,7 @@ namespace vielhuber\dbhelper;
 
 use PDO;
 
-class DBHelper
+class dbhelper
 {
 
     public $sql = null;
