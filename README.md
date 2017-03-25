@@ -1,4 +1,4 @@
-# 🍴 dbhelper 🍴
+# 🍗 dbhelper 🎷
 
 dbhelper is a small php wrapper for mysql/pgsql databases.
 
