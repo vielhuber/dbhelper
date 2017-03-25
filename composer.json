@@ -1,8 +1,8 @@
 {
     "name": "vielhuber/dbhelper",
-    "description": "PHP helper function framework for a convenient way of communicating with mysql/pgsql databases.",
+    "description": "Small PHP wrapper for mysql/pgsql databases.",
     "require": {
-        "php": "^7.0"
+        "php": ">=5.6"
     },
     "license": "MIT",
     "autoload": {
