@@ -32,7 +32,7 @@ $db->fetch_col('SELECT col FROM smd_brand WHERE ID > ?', 1));
 
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1));
 
-$id = $db->query('INSERT INTO table(`row1`, `row2`) VALUES(?,?,?)', 1, 2, 3));
+$id = $db->query('INSERT INTO table(`row1`, `row2`) VALUES(?, ?, ?)', 1, 2, 3));
 $db->query('UPDATE table SET `row1` = ? WHERE ID = ?', 1, 2));
 $db->query('DELETE FROM table WHERE ID = ?', 1));
 ```
