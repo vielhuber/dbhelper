@@ -22,6 +22,8 @@ $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
 
 $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 
+$db->delete('tablename', ['id' => 1]);
+
 $db->fetch_all('SELECT * FROM table WHERE ID > ?', 1));
 $db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'david', 5));
 $db->fetch_all('SELECT * FROM table WHERE col = ?', NULL));

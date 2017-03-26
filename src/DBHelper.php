@@ -518,4 +518,38 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
+    public function delete($table, $condition)
+    {
+        $query = "";
+        $query .= "DELETE FROM ";
+        $query .= "`" . $table . "`";
+        $query .= " WHERE ";
+        foreach ($condition as $key => $value)
+        {
+            $query .= "`" . $key . "`";
+            $query .= " = ";
+            $query .= "? ";
+            end($condition);
+            if ($key !== key($condition))
+            {
+                $query .= ' AND ';
+            }
+        }
+        $args = array();
+        $args[] = $query;
+        foreach ($condition as $c)
+        {
+            if ($c === true)
+            {
+                $c = 1;
+            }
+            if ($c === false)
+            {
+                $c = 0;
+            }
+            $args[] = $c;
+        }
+        return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
+    }
+
 }
