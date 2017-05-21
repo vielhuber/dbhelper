@@ -552,4 +552,48 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
+    public static function get_combined_query($input)
+    {
+        $query = 'UPDATE '.$input[0].' SET'.PHP_EOL;
+        foreach($input[1][0] as $col__key=>$col__value)
+        {
+            $query .= $col__key.' = CASE'.PHP_EOL;
+            foreach($input as $input__key=>$input__value)
+            {
+                if($input__key === 0) continue;
+                $query .= 'WHEN (';
+                $where = [];
+                foreach($input__value[1] as $where__key=>$where__value)
+                {
+                    $where[] = $where__key.' = '.((is_string($where__value))?('\''):('')).$where__value.((is_string($where__value))?('\''):(''));                
+                }
+                $query .= implode(' AND ',$where).')'.' THEN '.((is_string($input__value[0][$col__key]))?('\''):('')).$input__value[0][$col__key].((is_string($input__value[0][$col__key]))?('\''):('')).PHP_EOL;
+            }
+            $query .= 'END';
+            if( array_keys($input[1][0])[count(array_keys($input[1][0]))-1] !== $col__key ) $query .= ',';
+            $query .= PHP_EOL;
+        }
+        $query .= 'WHERE ';
+        $where = [];
+        foreach($input[1][1] as $where__key=>$where__value)
+        {
+            $where_values = [];
+            foreach($input as $input__key=>$input__value)
+            {
+                if($input__key === 0) continue;
+                $where_values[] = ((is_string($input__value[1][$where__key]))?('\''):('')).$input__value[1][$where__key].((is_string($input__value[1][$where__key]))?('\''):(''));
+            }
+            $where_values = array_unique($where_values);
+            $where[] = $where__key.' IN ('.implode(',',$where_values).')';
+        }
+        $query .= implode(' AND ', $where).';';
+        return $query;
+    }
+
 }
+
+print_r(dbhelper::get_combined_query(['table',
+    [['col1' => 'var1', 'col2' => 1], ['id' => 1, 'key' => '1']],
+    [['col1' => 'var2', 'col2' => 2], ['id' => 2, 'key' => '2']],
+    [['col1' => 'var3', 'col2' => 3], ['id' => 3, 'key' => '3']]
+]));
