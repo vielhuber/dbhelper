@@ -39,7 +39,7 @@ class dbhelper
 
             case 'wordpress':
             	global $wpdb;
-				$wpdb->show_errors = true;
+				$wpdb->show_errors = false;
 				$wpdb->suppress_errors = false;
                 $sql = $wpdb;
                 break;
@@ -228,7 +228,16 @@ class dbhelper
                 break;
 
             case 'wordpress':
-            	$data = $this->sql->get_var($query);
+                if( !empty($params) ) {
+                    $data = $this->sql->get_var($this->sql->prepare($query, $params));
+                    print_r($data);
+                    print_r($query);
+	                print_r($params);
+	                die();
+                }
+                else {
+                    $data = $this->sql->get_var($query);
+                }
                 break;
 
             case 'joomla':
@@ -459,6 +468,18 @@ class dbhelper
             $params = array_values($params);
         }
 
+        // WordPress: replace ? with %s
+        if( $this->sql->driver == 'wordpress' ) {
+            foreach($params as $params__key=>$params__value)
+            {
+                // replace first occurence
+                $directive = '%s';
+                if( is_float($params__value) ) { $directive = '%f'; }
+                if( is_int($params__value) ) { $directive = '%d'; }
+                $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
+            }
+        }
+
         return array($return, $params);
 
     }
@@ -594,9 +615,3 @@ class dbhelper
     }
 
 }
-
-print_r(dbhelper::get_combined_query(['table',
-    [['col1' => 'var1', 'col2' => 1], ['id' => 1, 'key' => '1']],
-    [['col1' => 'var2', 'col2' => 2], ['id' => 2, 'key' => '2']],
-    [['col1' => 'var3', 'col2' => 3], ['id' => 3, 'key' => '3']]
-]));
