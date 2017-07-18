@@ -24,19 +24,19 @@ $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 
 $db->delete('tablename', ['id' => 1]);
 
-$db->fetch_all('SELECT * FROM table WHERE ID > ?', 1));
-$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'david', 5));
-$db->fetch_all('SELECT * FROM table WHERE col = ?', NULL));
+$db->fetch_all('SELECT * FROM table WHERE ID > ?', 1);
+$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'david', 5);
+$db->fetch_all('SELECT * FROM table WHERE col = ?', NULL);
 
-$db->fetch_row('SELECT * FROM smd_brand WHERE ID = ?', 1));
+$db->fetch_row('SELECT * FROM smd_brand WHERE ID = ?', 1);
 
-$db->fetch_col('SELECT col FROM smd_brand WHERE ID > ?', 1));
+$db->fetch_col('SELECT col FROM smd_brand WHERE ID > ?', 1);
 
-$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1));
+$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 
-$id = $db->query('INSERT INTO table(`row1`, `row2`) VALUES(?, ?, ?)', 1, 2, 3));
-$db->query('UPDATE table SET `row1` = ? WHERE ID = ?', 1, 2));
-$db->query('DELETE FROM table WHERE ID = ?', 1));
+$id = $db->query('INSERT INTO table(`row1`, `row2`) VALUES(?, ?, ?)', 1, 2, 3);
+$db->query('UPDATE table SET `row1` = ? WHERE ID = ?', 1, 2);
+$db->query('DELETE FROM table WHERE ID = ?', 1);
 
 // generate a combined update query (perform multiple updates in one request)
 print_r(dbhelper::get_combined_query(['table',
@@ -58,4 +58,8 @@ WHEN (id = 3 AND key = '3') THEN 3
 END
 WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
+
+// this also works for wordpress (using wpdb and prepared statements under the hood)
+$db->connect('wordpress');
+$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 ```

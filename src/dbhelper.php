@@ -8,7 +8,7 @@ class dbhelper
 
     public $sql = null;
 
-    public function connect($driver, $engine, $host, $username, $password, $database, $port = 3306)
+    public function connect($driver, $engine = null, $host = null, $username = null, $password = null, $database = null, $port = 3306)
     {
         switch ($driver)
         {
@@ -38,7 +38,10 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
+            	global $wpdb;
+				$wpdb->show_errors = true;
+				$wpdb->suppress_errors = false;
+                $sql = $wpdb;
                 break;
 
             case 'joomla':
@@ -225,7 +228,7 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
+            	$data = $this->sql->get_var($query);
                 break;
 
             case 'joomla':
