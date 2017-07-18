@@ -283,7 +283,12 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
+                if( !empty($params) ) {
+                    $data = $this->sql->query($this->sql->prepare($query, $params));
+                }
+                else {
+                    $data = $this->sql->query($query);
+                }
                 break;
 
             case 'joomla':
