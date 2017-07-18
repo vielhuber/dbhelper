@@ -58,8 +58,22 @@ WHEN (id = 3 AND key = '3') THEN 3
 END
 WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
+```
 
-// this also works for wordpress (using wpdb and prepared statements under the hood)
+this also works for wordpress (using wpdb and prepared statements under the hood)
+```
+require __DIR__.'/vendor/autoload.php';
+use vielhuber\dbhelper\dbhelper;
+$db = new dbhelper();
 $db->connect('wordpress');
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
+```
+
+there is also a static version with static function calls (if you only use a single instance of dbhelper)
+```
+require __DIR__.'/vendor/autoload.php';
+use vielhuber\dbhelper\dbhelper;
+$db = new dbhelper();
+require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
+db_fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 ```
