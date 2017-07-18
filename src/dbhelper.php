@@ -230,10 +230,6 @@ class dbhelper
             case 'wordpress':
                 if( !empty($params) ) {
                     $data = $this->sql->get_var($this->sql->prepare($query, $params));
-                    print_r($data);
-                    print_r($query);
-	                print_r($params);
-	                die();
                 }
                 else {
                     $data = $this->sql->get_var($query);

@@ -60,8 +60,9 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
 ```
 
-this also works for wordpress (using wpdb and prepared statements under the hood)
+This also works for wordpress (using wpdb and prepared statements under the hood)
 ```
+<?php
 require __DIR__.'/vendor/autoload.php';
 use vielhuber\dbhelper\dbhelper;
 $db = new dbhelper();
@@ -69,8 +70,9 @@ $db->connect('wordpress');
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 ```
 
-there is also a static version with static function calls (if you only use a single instance of dbhelper)
+There is also a static version with static function calls (if you only use a single instance of dbhelper)
 ```
+<?php
 require __DIR__.'/vendor/autoload.php';
 use vielhuber\dbhelper\dbhelper;
 $db = new dbhelper();
