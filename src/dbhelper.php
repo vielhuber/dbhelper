@@ -485,7 +485,7 @@ class dbhelper
             {
                 // replace first occurence
                 $directive = '%s';
-                if( is_int($params__value) || (is_string($params__value) && ctype_digit($params__value)) ) { $directive = '%d'; }
+                if( is_int($params__value) || (string)ctype_digit($params__value) ) { $directive = '%d'; }
                 else if( is_float($params__value) ) { $directive = '%f'; }                
                 $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
             }
