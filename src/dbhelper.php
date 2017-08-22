@@ -490,6 +490,11 @@ class dbhelper
                 $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
             }
         }
+        
+        // WordPress: pass stripslashes_deep to all parameters (wordpress always adds slashes to them)
+        if( $this->sql->driver == 'wordpress' ) {
+            $params = stripslashes_deep($params);
+        }
 
         return array($return, $params);
 
