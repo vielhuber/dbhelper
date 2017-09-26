@@ -449,6 +449,9 @@ class dbhelper
     public function preparse_query($query, $params)
     {
 
+        // also allow arrays to be passed as params
+        if( is_array($params) && count($params) == 1 && isset($params[0]) && is_array($params[0]) ) { $params = $params[0]; }
+
         $return = $query;
 
         // NULL values are treated specially: modify the query
