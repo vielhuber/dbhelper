@@ -4,18 +4,23 @@ dbhelper is a small php wrapper for mysql/pgsql databases.
 
 ## Installation
 
+Install once with composer:
 ```
 composer require vielhuber/dbhelper
+```
+
+Then add this to your files:
+```php
+<?php
+require __DIR__.'/vendor/autoload.php';
+use vielhuber\dbhelper\dbhelper;
+$db = new dbhelper();
 ```
 
 ## Usage
 
 ```php
 <?php
-require __DIR__.'/vendor/autoload.php';
-use vielhuber\dbhelper\dbhelper;
-$db = new dbhelper();
-
 $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
 
 $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
@@ -64,9 +69,6 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 This also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood)
 ```php
 <?php
-require __DIR__.'/vendor/autoload.php';
-use vielhuber\dbhelper\dbhelper;
-$db = new dbhelper();
 $db->connect('wordpress');
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 ```
@@ -74,9 +76,6 @@ $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 There is also a static version with static function calls (if you only use a single instance of dbhelper)
 ```php
 <?php
-require __DIR__.'/vendor/autoload.php';
-use vielhuber\dbhelper\dbhelper;
-$db = new dbhelper();
 require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
 db_fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 ```
