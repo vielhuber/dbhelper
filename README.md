@@ -25,17 +25,17 @@ $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 $db->delete('tablename', ['id' => 1]);
 
 $db->fetch_all('SELECT * FROM table WHERE ID > ?', 1);
-$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'david', 5);
+$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
 $db->fetch_all('SELECT * FROM table WHERE col = ?', NULL);
 
-$db->fetch_row('SELECT * FROM smd_brand WHERE ID = ?', 1);
+$db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
 
-$db->fetch_col('SELECT col FROM smd_brand WHERE ID > ?', 1);
+$db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
 
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 
-$id = $db->query('INSERT INTO table(`row1`, `row2`) VALUES(?, ?, ?)', 1, 2, 3);
-$db->query('UPDATE table SET `row1` = ? WHERE ID = ?', 1, 2);
+$id = $db->query('INSERT INTO table(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
+$db->query('UPDATE table SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM table WHERE ID = ?', 1);
 
 // generate a combined update query (perform multiple updates in one request)
@@ -45,6 +45,7 @@ print_r(dbhelper::get_combined_query(['table',
     [['col1' => 'var3', 'col2' => 3], ['id' => 3, 'key' => '3']]
 ]));
 /*
+this generates the following query:
 UPDATE table SET
 col1 = CASE
 WHEN (id = 1 AND key = '1') THEN 'var1'
