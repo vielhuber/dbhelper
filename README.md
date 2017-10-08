@@ -21,16 +21,25 @@ $db = new dbhelper();
 ```php
 $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
 
+/* basics create/update/delete */
 $id = $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
-
-
-
 $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
-
 $db->delete('tablename', ['id' => 1]);
 
+/* or with raw queries */
+$id = $db->query('INSERT INTO table(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
+$db->query('UPDATE table SET row1 = ? WHERE ID = ?', 1, 2);
+$db->query('DELETE FROM table WHERE ID = ?', 1);
 
-/* the following batch functions will each be executed in one single query */
+/* select queries */
+$db->fetch_all('SELECT * FROM table WHERE ID > ?', 1);
+$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
+$db->fetch_all('SELECT * FROM table WHERE col = ?', NULL);
+$db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
+$db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
+$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
+
+/* batch functions (create only one query) */
 $db->insert('tablename', [
     ['id' => 1, 'name' => 'foo1'],
     ['id' => 2, 'name' => 'foo2'],
@@ -53,20 +62,6 @@ col1 = CASE WHEN (id = 1 AND key = '1') THEN 'var1' WHEN (id = 2 AND key = '2') 
 col2 = CASE WHEN (id = 1 AND key = '1') THEN 1 WHEN (id = 2 AND key = '2') THEN 2 WHEN (id = 3 AND key = '3') THEN 3 END
 WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
-
-$db->fetch_all('SELECT * FROM table WHERE ID > ?', 1);
-$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
-$db->fetch_all('SELECT * FROM table WHERE col = ?', NULL);
-
-$db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
-
-$db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
-
-$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
-
-$id = $db->query('INSERT INTO table(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
-$db->query('UPDATE table SET row1 = ? WHERE ID = ?', 1, 2);
-$db->query('DELETE FROM table WHERE ID = ?', 1);
 ```
 
 This also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood)
