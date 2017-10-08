@@ -47,9 +47,9 @@ $db->insert('tablename', [
     ['id' => 3, 'name' => 'foo3']
 ]);
 $db->delete('tablename', [
-	['id' => 1],
-	['id' => 7],
-	['id' => 42]
+    ['id' => 1],
+    ['id' => 7],
+    ['id' => 42]
 ]);
 $db->update('tablename', [
     [['col1' => 'var1', 'col2' => 1], ['id' => 1, 'key' => '1']],
