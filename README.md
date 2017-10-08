@@ -19,9 +19,10 @@ $db = new dbhelper();
 ## Usage
 
 ```php
+/* connnect to database */
 $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
 
-/* basics create/update/delete */
+/* create/update/delete basics */
 $id = $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
 $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 $db->delete('tablename', ['id' => 1]);
@@ -39,7 +40,7 @@ $db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
 $db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 
-/* batch functions (create only one query) */
+/* batch functions (they create only one query) */
 $db->insert('tablename', [
     ['id' => 1, 'name' => 'foo1'],
     ['id' => 2, 'name' => 'foo2'],
