@@ -58,20 +58,20 @@ $db->update('tablename', [
 ]);
 /*
 this generates the following query:
-UPDATE table SET
+UPDATE tablename SET
 col1 = CASE WHEN (id = 1 AND key = '1') THEN 'var1' WHEN (id = 2 AND key = '2') THEN 'var2' WHEN (id = 3 AND key = '3') THEN 'var3' END,
 col2 = CASE WHEN (id = 1 AND key = '1') THEN 1 WHEN (id = 2 AND key = '2') THEN 2 WHEN (id = 3 AND key = '3') THEN 3 END
 WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
 ```
 
-This also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood)
+This also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
 ```php
 $db->connect('wordpress');
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 ```
 
-There is also a static version with static function calls (if you only use a single instance of dbhelper)
+There is also a static version with static function calls (if you only use a single instance of dbhelper):
 ```php
 require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
 db_fetch_var('SELECT item FROM table WHERE ID = ?', 1);
