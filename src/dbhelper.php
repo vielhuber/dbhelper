@@ -518,8 +518,12 @@ class dbhelper
 
     }
 
-    public function update($table, $data, $condition)
+    public function update($table, $data, $condition = null)
     {
+        if( isset($data[0]) && is_array($data[0]) )
+        {
+            return $this->update_batch($table, $data);
+        }
         $query = "";
         $query .= "UPDATE ";
         $query .= "`" . $table . "`";
@@ -576,76 +580,97 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
-    public function delete($table, $condition)
+    public function delete($table, $conditions)
     {
-        $query = "";
-        $query .= "DELETE FROM ";
-        $query .= "`" . $table . "`";
-        $query .= " WHERE ";
-        foreach ($condition as $key => $value)
+        if( !isset($conditions[0]) && !is_array(array_values($conditions)[0]) )
         {
-            $query .= "`" . $key . "`";
-            $query .= " = ";
-            $query .= "? ";
-            end($condition);
-            if ($key !== key($condition))
+            $conditions = [$conditions];
+        }
+        $query = '';
+        $query .= 'DELETE FROM ';
+        $query .= '`' . $table . '`';
+        $query .= ' WHERE ';
+        $query .= '(';
+        foreach($conditions as $conditions__key=>$conditions__value)
+        {
+            $query .= '(';
+            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
             {
-                $query .= ' AND ';
+                $query .= '`'.$conditions__value__key.'`';
+                $query .= ' = ';
+                $query .= '?';
+                if( array_keys($conditions__value)[count(array_keys($conditions__value))-1] !== $conditions__value__key )
+                {
+                    $query .= ' AND ';
+                }
+            }
+            $query .= ')';
+            if( array_keys($conditions)[count(array_keys($conditions))-1] !== $conditions__key )
+            {
+                $query .= ' OR ';
             }
         }
-        $args = array();
+        $query .= ')';
+        $args = [];
         $args[] = $query;
-        foreach ($condition as $c)
+        foreach($conditions as $conditions__key=>$conditions__value)
         {
-            if ($c === true)
+            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
             {
-                $c = 1;
+                if($conditions__value__value === true)
+                {
+                    $conditions__value__value = 1;
+                }
+                if($conditions__value__value === false)
+                {
+                    $conditions__value__value = 0;
+                }
+                $args[] = $conditions__value__value;
             }
-            if ($c === false)
-            {
-                $c = 0;
-            }
-            $args[] = $c;
         }
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
-    public static function get_combined_query($input)
+    public function update_batch($table, $input)
     {
-        $query = 'UPDATE '.$input[0].' SET'.PHP_EOL;
-        foreach($input[1][0] as $col__key=>$col__value)
+        $query = '';
+        $args = [];
+        $query = 'UPDATE '.$table.' SET'.PHP_EOL;
+        foreach($input[0][0] as $col__key=>$col__value)
         {
             $query .= $col__key.' = CASE'.PHP_EOL;
             foreach($input as $input__key=>$input__value)
             {
-                if($input__key === 0) continue;
                 $query .= 'WHEN (';
                 $where = [];
                 foreach($input__value[1] as $where__key=>$where__value)
                 {
-                    $where[] = $where__key.' = '.((is_string($where__value))?('\''):('')).$where__value.((is_string($where__value))?('\''):(''));                
+                    $where[] = $where__key.' = ?';
+                    $args[] = $where__value;
                 }
-                $query .= implode(' AND ',$where).')'.' THEN '.((is_string($input__value[0][$col__key]))?('\''):('')).$input__value[0][$col__key].((is_string($input__value[0][$col__key]))?('\''):('')).PHP_EOL;
+                $query .= implode(' AND ',$where).')'.' THEN ?'.PHP_EOL;
+                $args[] = $input__value[0][$col__key];
             }
             $query .= 'END';
-            if( array_keys($input[1][0])[count(array_keys($input[1][0]))-1] !== $col__key ) $query .= ',';
+            if( array_keys($input[0][0])[count(array_keys($input[0][0]))-1] !== $col__key ) $query .= ',';
             $query .= PHP_EOL;
         }
         $query .= 'WHERE ';
         $where = [];
-        foreach($input[1][1] as $where__key=>$where__value)
+        foreach($input[0][1] as $where__key=>$where__value)
         {
             $where_values = [];
             foreach($input as $input__key=>$input__value)
             {
-                if($input__key === 0) continue;
-                $where_values[] = ((is_string($input__value[1][$where__key]))?('\''):('')).$input__value[1][$where__key].((is_string($input__value[1][$where__key]))?('\''):(''));
+                $where_values[] = $input__value[1][$where__key];
             }
             $where_values = array_unique($where_values);
-            $where[] = $where__key.' IN ('.implode(',',$where_values).')';
+            $where[] = $where__key.' IN ('.str_repeat('?,',count($where_values)-1).'?)';
+            $args = array_merge($args, $where_values);
         }
         $query .= implode(' AND ', $where).';';
-        return $query;
+        array_unshift($args, $query);
+        return call_user_func_array([$this, 'query'], $args);
     }
 
 }
