@@ -301,43 +301,58 @@ class dbhelper
 
     public function insert($table, $data)
     {
-        $query = "";
-        $query .= "INSERT INTO ";
-        $query .= "`" . $table . "`";
-        $query .= "(";
-        foreach ($data as $key => $value)
+        if( !isset($data[0]) && !is_array(array_values($data)[0]) )
+        {
+            $data = [$data];
+        }
+        $query = '';
+        $query .= 'INSERT INTO ';
+        $query .= '`' . $table . '`';
+        $query .= '(';
+        foreach($data[0] as $data__key=>$data__value)
         {
             if ($this->sql->engine == 'mysql')
             {
-                $query .= '`' . $key . '`';
+                $query .= '`' . $data__key . '`';
             }
             if ($this->sql->engine == 'postgres')
             {
-                $query .= '"' . $key . '"';
+                $query .= '"' . $data__key . '"';
             }
-            end($data);
-            if ($key !== key($data))
+            if( array_keys($data[0])[count(array_keys($data[0]))-1] !== $data__key )
             {
                 $query .= ',';
             }
         }
-        $query .= ") VALUES(";
-        $query .= str_repeat("?,", count($data) - 1) . "?";
-        $query .= ")";
-        $args = array();
-        $args[] = $query;
-        foreach ($data as $d)
+        $query .= ') ';
+        $query .= 'VALUES ';
+        foreach($data as $data__key=>$data__value)
         {
-            // because pdo can't insert true/false values so easily, convert them to 1/0
-            if ($d === true)
+            $query .= '(';
+                $query .= str_repeat('?,',count($data__value)-1).'?';
+            $query .= ')';
+            if( array_keys($data)[count(array_keys($data))-1] !== $data__key )
             {
-                $d = 1;
+                $query .= ',';
             }
-            if ($d === false)
+        }
+        $args = [];
+        $args[] = $query;
+        foreach($data as $data__key=>$data__value)
+        {
+            foreach($data__value as $data__value__key=>$data__value__value)
             {
-                $d = 0;
+                // because pdo can't insert true/false values so easily, convert them to 1/0
+                if($data__value__value === true)
+                {
+                    $data__value__value = 1;
+                }
+                if($data__value__value === false)
+                {
+                    $data__value__value = 0;
+                }
+                $args[] = $data__value__value;
             }
-            $args[] = $d;
         }
         call_user_func_array([$this, 'query'], $args);
         return $this->last_insert_id();

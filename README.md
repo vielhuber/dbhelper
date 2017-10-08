@@ -21,7 +21,14 @@ $db = new dbhelper();
 ```php
 $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
 
-$db->insert('tablename', ['id' => 1, 'name' => 'foo']);
+$id = $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
+
+/* this insert will be executed in one query */
+$db->insert('tablename', [
+    ['id' => 1, 'name' => 'foo1'],
+    ['id' => 2, 'name' => 'foo2'],
+    ['id' => 3, 'name' => 'foo3']
+]);
 
 $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 
