@@ -39,6 +39,7 @@ class dbhelper
 
             case 'wordpress':
             	global $wpdb;
+                $engine = 'mysql';
 				$wpdb->show_errors = false;
 				$wpdb->suppress_errors = false;
                 $sql = $wpdb;
