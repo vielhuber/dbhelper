@@ -7,4 +7,3 @@ function db_query(...$query) { global $db; return $db->query(...$query); }
 function db_insert($table, $data) { global $db; return $db->insert($table, $data); }
 function db_update($table, $data, $condition = null) { global $db; return $db->update($table, $data, $condition); }
 function db_delete($table, $conditions) { global $db; return $db->delete($table, $conditions); }
-function db_update_batch($table, $input) { global $db; return $db->update_batch($table, $input); }
