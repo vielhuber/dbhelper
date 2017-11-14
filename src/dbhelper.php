@@ -482,17 +482,51 @@ class dbhelper
 
         $return = $query;
 
-        // also allow arrays to be passed as params (todo)
-        if( is_array($params) && count($params) == 1 && isset($params[0]) && is_array($params[0]) ) { $params = $params[0]; }
-
-        // replace IN-syntax (TODO)
         /*
-        also allow arrays to be passed as params
-        fetch('SELECT * FROM foo WHERE ID = ? AND name = ?', [1], [2,3,4])
+        expand IN-syntax
+        fetch('SELECT * FROM table WHERE col1 IN (?) AND col2 IN (?) AND col3 IN (?,?) col4 IN (?)', [1], 2, [7,8], [3,4,5])
         gets to
-        fetch('SELECT * FROM foo WHERE ID = ? AND name = ?', 1, 2, 3, 4)
+        fetch('SELECT * FROM table WHERE col1 IN (?) AND col2 IN (?) AND col4 IN (?,?) AND col4 IN (?,?,?)', 1, 2, 3, 7, 8, 3, 4, 5)
         */
-        if( 1==0 )
+        if( strpos($query, 'IN (') !== false || strpos($query, 'IN(') !== false )
+        {
+            // find all ?s
+            $in_positions = $this->find_occurences($query,'?');
+            $in_index = 0;
+            if( !empty($params) )
+            {
+                foreach($params as $params__key=>$params__value)
+                {
+                    if( is_array($params__value) && count($params__value) > 0 )
+                    {
+                        $in_occurence = $this->find_nth_occurence($return,'?',$in_index);
+                        if( substr($return, $in_occurence-1, 3) == '(?)' )
+                        {
+                            $return = substr($return, 0, $in_occurence-1).
+                                    '('.(str_repeat('?,',count($params__value)-1).'?').')'.
+                                    substr($return, $in_occurence+2);
+                        }
+                        foreach($params__value as $params__value__value)
+                        {
+                            $in_index++;
+                        }
+                    }
+                    else
+                    {
+                        $in_index++;
+                    }
+                }
+            }
+        }
+        
+        /*
+        finally flatten all arguments
+        example:
+        fetch('SELECT * FROM table WHERE ID = ?', [1], 2, [3], [4,5,6])
+        =>
+        fetch('SELECT * FROM table WHERE ID = ?', 1, 2, 3, 4, 5, 6)
+        */
+        if( !empty($params) )
         {
             $params_flattened = [];
             if( is_array($params) && count($params) > 0 )
@@ -513,26 +547,7 @@ class dbhelper
                 }
             }
             $params = $params_flattened;
-            $val_in = '(X)';
-            if( strpos($query, $val_in) !== false )
-            {
-                $positions = [];
-                $last_pos = 0;
-                while(($last_pos = strpos($query, $val_in, $last_pos)) !== false)
-                {
-                    $positions[] = $last_pos;
-                    $last_pos += strlen($val_in);
-                }
-                $shift = 0;
-                foreach($positions as $positions__key=>$positions__value)
-                {
-                    $val_new = '('.(str_repeat('?,',count($params[$positions__key])-1).'?').')';
-                    $query = substr($query, 0, $positions__value+$shift).$val_new.substr($query, ($positions__value+$shift+strlen($val_in)));
-                    $shift += (strlen($val_new)-strlen($val_in));
-                }
-            }
         }
-        
 
         // NULL values are treated specially: modify the query
         if (strpos($query, "UPDATE") === false)
@@ -738,6 +753,25 @@ class dbhelper
         $query .= implode(' AND ', $where).';';
         array_unshift($args, $query);
         return call_user_func_array([$this, 'query'], $args);
+    }
+
+    public function find_occurences($haystack, $needle)
+    {
+        $positions = [];
+        $pos_last = 0;
+        while( ($pos_last = strpos($haystack, $needle, $pos_last)) !== false )
+        {
+            $positions[] = $pos_last;
+            $pos_last = $pos_last + strlen($needle);
+        }
+        return $positions;
+    }
+
+    public function find_nth_occurence($haystack, $needle, $index)
+    {
+        $positions = $this->find_occurences($haystack, $needle);
+        if(empty($positions) || $index > (count($positions)-1)) { return null; }
+        return $positions[$index];
     }
 
 }
