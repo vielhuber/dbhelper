@@ -40,6 +40,9 @@ $db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
 $db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
 $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 
+/* IN-syntax */
+$db->fetch_all('SELECT * FROM table WHERE ID IN (X) AND customer_id NOT IN (X)', [1,2,3], [4,5,6]);
+
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
     ['id' => 1, 'name' => 'foo1'],

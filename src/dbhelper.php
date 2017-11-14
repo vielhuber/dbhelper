@@ -38,10 +38,10 @@ class dbhelper
                 break;
 
             case 'wordpress':
-            	global $wpdb;
+                global $wpdb;
                 $engine = 'mysql';
-				$wpdb->show_errors = false;
-				$wpdb->suppress_errors = false;
+                $wpdb->show_errors = false;
+                $wpdb->suppress_errors = false;
                 $sql = $wpdb;
                 break;
 
@@ -480,10 +480,55 @@ class dbhelper
     public function preparse_query($query, $params)
     {
 
-        // also allow arrays to be passed as params
-        if( is_array($params) && count($params) == 1 && isset($params[0]) && is_array($params[0]) ) { $params = $params[0]; }
-
         $return = $query;
+
+        /*
+        also allow arrays to be passed as params
+        fetch('SELECT * FROM foo WHERE ID = ? AND name = ?', [1], [2,3,4])
+        gets to
+        fetch('SELECT * FROM foo WHERE ID = ? AND name = ?', 1, 2, 3, 4)
+        */
+        $params_flattened = [];
+        if( is_array($params) && count($params) > 0 )
+        {
+            foreach($params as $params__value)
+            {
+                if( is_array($params__value) && count($params__value) > 0 )
+                {
+                    foreach($params__value as $params__value__value)
+                    {
+                        $params_flattened[] = $params__value__value;
+                    }
+                }
+                else
+                {
+                    $params_flattened[] = $params__value;
+                }
+            }
+        }
+        $params = $params_flattened;
+
+        // replace IN-syntax
+        $val_in = '(X)';
+        if( strpos($query, $val_in) !== false )
+        {
+            $positions = [];
+            $last_pos = 0;
+            while(($last_pos = strpos($query, $val_in, $last_pos)) !== false)
+            {
+                $positions[] = $last_pos;
+                $last_pos += strlen($val_in);
+            }
+            $shift = 0;
+            echo $query;
+            foreach($positions as $positions__key=>$positions__value)
+            {
+                $val_new = '('.(str_repeat('?,',count($params[$positions__key])-1).'?').')';
+                $query = substr($query, 0, $positions__value+$shift).$val_new.substr($query, ($positions__value+$shift+strlen($val_in)));
+                $shift += (strlen($val_new)-strlen($val_in));
+            }
+        }
+        
 
         // NULL values are treated specially: modify the query
         if (strpos($query, "UPDATE") === false)
