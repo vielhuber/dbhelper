@@ -520,7 +520,6 @@ class dbhelper
                 $last_pos += strlen($val_in);
             }
             $shift = 0;
-            echo $query;
             foreach($positions as $positions__key=>$positions__value)
             {
                 $val_new = '('.(str_repeat('?,',count($params[$positions__key])-1).'?').')';
