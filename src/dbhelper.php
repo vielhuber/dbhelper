@@ -88,10 +88,12 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) ) {
+                if( !empty($params) )
+                {
                     $data = $this->sql->get_results($this->sql->prepare($query, $params));
                 }
-                else {
+                else
+                {
                     $data = $this->sql->get_results($query);
                 }
                 break;
@@ -133,10 +135,12 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) ) {
+                if( !empty($params) )
+                {
                     $data = $this->sql->get_row($this->sql->prepare($query, $params));
                 }
-                else {
+                else
+                {
                     $data = $this->sql->get_row($query);
                 }
                 break;
@@ -187,7 +191,14 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
+                if( !empty($params) )
+                {
+                    $data = $this->sql->get_col($this->sql->prepare($query, $params));
+                }
+                else
+                {
+                    $data = $this->sql->get_col($query);
+                }
                 break;
 
             case 'joomla':
@@ -239,10 +250,12 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) ) {
+                if( !empty($params) )
+                {
                     $data = $this->sql->get_var($this->sql->prepare($query, $params));
                 }
-                else {
+                else
+                {
                     $data = $this->sql->get_var($query);
                 }
                 break;
@@ -284,10 +297,12 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) ) {
+                if( !empty($params) )
+                {
                     $data = $this->sql->query($this->sql->prepare($query, $params));
                 }
-                else {
+                else
+                {
                     $data = $this->sql->query($query);
                 }
                 break;
@@ -499,7 +514,8 @@ class dbhelper
         }
 
         // WordPress: replace ? with %s
-        if( $this->sql->driver == 'wordpress' ) {
+        if( $this->sql->driver == 'wordpress' )
+        {
             foreach($params as $params__key=>$params__value)
             {
                 // replace first occurence
@@ -511,7 +527,8 @@ class dbhelper
         }
         
         // WordPress: pass stripslashes_deep to all parameters (wordpress always adds slashes to them)
-        if( $this->sql->driver == 'wordpress' ) {
+        if( $this->sql->driver == 'wordpress' )
+        {
             $params = stripslashes_deep($params);
         }
 
