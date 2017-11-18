@@ -423,7 +423,7 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
+                $total_count = $this->fetch_var("SELECT FOUND_ROWS();");
                 break;
 
             case 'joomla':
