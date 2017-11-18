@@ -396,7 +396,7 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
+                $last_insert_id = $this->fetch_var("SELECT LAST_INSERT_ID();");
                 break;
 
             case 'joomla':
