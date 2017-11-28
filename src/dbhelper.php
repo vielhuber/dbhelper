@@ -540,7 +540,7 @@ class dbhelper
                             $params_flattened[] = $params__value__value;
                         }
                     }
-                    else
+                    elseif( !is_array($params__value) )
                     {
                         $params_flattened[] = $params__value;
                     }
