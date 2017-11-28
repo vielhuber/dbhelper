@@ -552,6 +552,7 @@ class dbhelper
         // NULL values are treated specially: modify the query
         {
             $pos = 0;
+            $delete_keys = [];
             foreach($params as $params__key=>$params__value)
             {
                 // no more ?s are left
@@ -569,9 +570,18 @@ class dbhelper
                 // case 1: if query contains WHERE before ?, then convert != ? to IS NOT NULL and = ? to IS NULL
                 if( strpos( substr($return, 0, $pos), 'WHERE' ) !== false )
                 {
-                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/<> \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
-                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/\!= \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
-                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', 'IS NULL', substr($return, ($pos - 5)), 1);
+                    if( strpos(substr($return, $pos-5, 6), '<> ?') !== false )
+                    { 
+                        $return = substr($return, 0, ($pos - 5)) . preg_replace('/<> \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
+                    }
+                    elseif( strpos(substr($return, $pos-5, 6), '!= ?') !== false )
+                    {
+                        $return = substr($return, 0, ($pos - 5)) . preg_replace('/\!= \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
+                    }
+                    elseif( strpos(substr($return, $pos-5, 6), '= ?') !== false )
+                    {
+                        $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', 'IS NULL', substr($return, ($pos - 5)), 1);
+                    }
                 }
                 // case 2: in all other cases, convert ? to NULL
                 else
@@ -580,8 +590,15 @@ class dbhelper
                 }
 
                 // delete param
-                unset($params[$params__key]);
+                $delete_keys[] = $params__key;
 
+            }
+            if( !empty($delete_keys) )
+            {
+                foreach($delete_keys as $delete_keys__value)
+                {
+                    unset($params[$delete_keys__value]);
+                }
             }
             $params = array_values($params);
         }
