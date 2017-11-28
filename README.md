@@ -43,6 +43,16 @@ $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 /* automatic IN-expansion */
 $db->fetch_all('SELECT * FROM table WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
 
+/* automatic argument flatten */
+$db->fetch_all('SELECT * FROM table WHERE ID = ?', [1], 2, [3], [4,5,6]);
+=>
+$db->fetch_all('SELECT * FROM table WHERE ID = ?', 1, 2, 3, 4, 5, 6);
+
+/* support for null values */
+$db->fetch_all('SELECT * FROM table WHERE col1 = ?', null);
+=>
+$db->fetch_all('SELECT * FROM table WHERE col1 IS NULL');
+
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
     ['id' => 1, 'name' => 'foo1'],
