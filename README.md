@@ -43,7 +43,7 @@ $db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
 /* automatic IN-expansion */
 $db->fetch_all('SELECT * FROM table WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
 
-/* automatic argument flatten */
+/* automatic flattened arguments */
 $db->fetch_all('SELECT * FROM table WHERE ID = ?', [1], 2, [3], [4,5,6]);
 =>
 $db->fetch_all('SELECT * FROM table WHERE ID = ?', 1, 2, 3, 4, 5, 6);
