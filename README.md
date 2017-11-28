@@ -49,13 +49,9 @@ $db->fetch_all('SELECT * FROM table WHERE ID = ?', [1], 2, [3], [4,5,6]);
 $db->fetch_all('SELECT * FROM table WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 
 /* support for null values */
-$db->fetch_all('SELECT * FROM table WHERE col1 = ?', null);
+$db->fetch_all('UPDATE table SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
 =>
-$db->fetch_all('SELECT * FROM table WHERE col1 IS NULL');
-
-$db->fetch_all('UPDATE table SET col1 = ?', null);
-=>
-$db->fetch_all('UPDATE table SET col1 = NULL');
+$db->fetch_all('UPDATE table SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [

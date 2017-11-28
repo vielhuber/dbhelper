@@ -552,33 +552,35 @@ class dbhelper
         // NULL values are treated specially: modify the query
         {
             $pos = 0;
-            foreach ($params as $x_Key => $param)
+            foreach($params as $params__key=>$params__value)
             {
                 // no more ?s are left
-                if (($pos = strpos($query, '= ?', $pos + 1)) === false)
+                if(($pos = strpos($return, '?', $pos + 1)) === false)
                 {
                     break;
                 }
+
                 // if param is not null, nothing must be done
-                if (!is_null($param))
+                if (!is_null($params__value))
                 {
                     continue;
                 }
 
-                // convert != ? to IS NOT NULL and = ? to IS NULL
-                if (strpos($query, 'UPDATE') === false)
+                // case 1: if query contains WHERE before ?, then convert != ? to IS NOT NULL and = ? to IS NULL
+                if( strpos( substr($return, 0, $pos), 'WHERE' ) !== false )
                 {
+                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/<> \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
                     $return = substr($return, 0, ($pos - 5)) . preg_replace('/\!= \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
                     $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', 'IS NULL', substr($return, ($pos - 5)), 1);
                 }
-                // convert = ? to = NULL
+                // case 2: in all other cases, convert ? to NULL
                 else
                 {
-                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', '= NULL', substr($return, ($pos - 5)), 1);
+                    $return = substr($return, 0, $pos) . 'NULL' . substr($return, $pos+1);
                 }
 
                 // delete param
-                unset($params[ $x_Key ]);
+                unset($params[$params__key]);
 
             }
             $params = array_values($params);
