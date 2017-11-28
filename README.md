@@ -53,6 +53,10 @@ $db->fetch_all('SELECT * FROM table WHERE col1 = ?', null);
 =>
 $db->fetch_all('SELECT * FROM table WHERE col1 IS NULL');
 
+$db->fetch_all('UPDATE table SET col1 = ?', null);
+=>
+$db->fetch_all('UPDATE table SET col1 = NULL');
+
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
     ['id' => 1, 'name' => 'foo1'],

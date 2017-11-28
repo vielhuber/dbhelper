@@ -550,7 +550,6 @@ class dbhelper
         }
 
         // NULL values are treated specially: modify the query
-        if (strpos($query, "UPDATE") === false)
         {
             $pos = 0;
             foreach ($params as $x_Key => $param)
@@ -567,8 +566,16 @@ class dbhelper
                 }
 
                 // convert != ? to IS NOT NULL and = ? to IS NULL
-                $return = substr($return, 0, ($pos - 5)) . preg_replace("/\!= \?/", "IS NOT NULL", substr($return, ($pos - 5)), 1);
-                $return = substr($return, 0, ($pos - 5)) . preg_replace("/= \?/", "IS NULL", substr($return, ($pos - 5)), 1);
+                if (strpos($query, 'UPDATE') === false)
+                {
+                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/\!= \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
+                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', 'IS NULL', substr($return, ($pos - 5)), 1);
+                }
+                // convert = ? to = NULL
+                else
+                {
+                    $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', '= NULL', substr($return, ($pos - 5)), 1);
+                }
 
                 // delete param
                 unset($params[ $x_Key ]);
