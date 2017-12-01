@@ -53,7 +53,7 @@ $db->fetch_all('UPDATE table SET col1 = ? WHERE col2 = ? AND col3 != ?', null, n
 =>
 $db->fetch_all('UPDATE table SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
-/* delete all tables (without dropping the database) */
+/* delete all tables (without dropping the whole database) */
 $db->clear('database');
 
 /* batch functions (they create only one query) */
