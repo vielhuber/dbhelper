@@ -781,6 +781,20 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args);
     }
 
+    public function drop($database)
+    {
+        $this->query('SET FOREIGN_KEY_CHECKS = 0');        
+        $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $database);
+        if( !empty($tables) )
+        {
+            foreach($tables as $tables__value)
+            {
+                $this->query('DROP TABLE '.$tables__value);
+            }
+        }
+        $this->query('SET FOREIGN_KEY_CHECKS = 1');
+    }
+
     public function find_occurences($haystack, $needle)
     {
         $positions = [];
