@@ -7,7 +7,7 @@ class Test extends \PHPUnit\Framework\TestCase
     {
         $db = new dbhelper();
         $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'dbhelper', 3306);
-        $db->drop('dbhelper');
+        $db->clear('dbhelper');
         $db->query('
             CREATE TABLE test
             (
@@ -39,6 +39,6 @@ class Test extends \PHPUnit\Framework\TestCase
         $value = $db->fetch_var('SELECT col1 FROM test WHERE col2 = ?', 1337);
         $this->assertEquals($value, 'foo');
 
-        $db->drop('dbhelper');
+        $db->clear('dbhelper');
     }
 }

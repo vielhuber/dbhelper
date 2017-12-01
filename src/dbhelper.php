@@ -781,7 +781,7 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args);
     }
 
-    public function drop($database)
+    public function clear($database)
     {
         $this->query('SET FOREIGN_KEY_CHECKS = 0');        
         $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $database);
