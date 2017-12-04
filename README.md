@@ -34,7 +34,7 @@ $db->delete('tablename', ['id' => 1]);
 $db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
 $db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
 $db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
-$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
+$db->fetch_var('SELECT row FROM table WHERE ID = ?', 1);
 
 /* raw queries */
 $id = $db->query('INSERT INTO table(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
