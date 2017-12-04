@@ -31,28 +31,28 @@ $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 $db->delete('tablename', ['id' => 1]);
 
 /* select */
-$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
-$db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
-$db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
-$db->fetch_var('SELECT row FROM table WHERE ID = ?', 1);
+$db->fetch_all('SELECT * FROM tablename WHERE name = ? AND number > ?', 'foo', 42);
+$db->fetch_row('SELECT * FROM tablename WHERE ID = ?', 1);
+$db->fetch_col('SELECT col FROM tablename WHERE ID > ?', 1);
+$db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 /* raw queries */
-$id = $db->query('INSERT INTO table(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
-$db->query('UPDATE table SET row1 = ? WHERE ID = ?', 1, 2);
-$db->query('DELETE FROM table WHERE ID = ?', 1);
+$id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
+$db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
+$db->query('DELETE FROM tablename WHERE ID = ?', 1);
 
 /* automatic in-expansion */
-$db->fetch_all('SELECT * FROM table WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
+$db->fetch_all('SELECT * FROM tablename WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
 
 /* automatic flattened arguments */
-$db->fetch_all('SELECT * FROM table WHERE ID = ?', [1], 2, [3], [4,5,6]);
+$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,5,6]);
 =>
-$db->fetch_all('SELECT * FROM table WHERE ID = ?', 1, 2, 3, 4, 5, 6);
+$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 
 /* support for null values */
-$db->fetch_all('UPDATE table SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
+$db->fetch_all('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
 =>
-$db->fetch_all('UPDATE table SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
+$db->fetch_all('UPDATE tablename SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
 /* delete all tables (without dropping the whole database) */
 $db->clear('database');
@@ -85,11 +85,11 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 This also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
 ```php
 $db->connect('wordpress');
-$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
+$db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
 
 There is also a static version with static function calls (if you only use a single instance of dbhelper):
 ```php
 require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
-db_fetch_var('SELECT item FROM table WHERE ID = ?', 1);
+db_fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
