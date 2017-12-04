@@ -30,20 +30,18 @@ $id = $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
 $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 $db->delete('tablename', ['id' => 1]);
 
+/* select */
+$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
+$db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
+$db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
+$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
+
 /* raw queries */
 $id = $db->query('INSERT INTO table(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
 $db->query('UPDATE table SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM table WHERE ID = ?', 1);
 
-/* select queries */
-$db->fetch_all('SELECT * FROM table WHERE ID > ?', 1);
-$db->fetch_all('SELECT * FROM table WHERE name = ? AND number > ?', 'foo', 42);
-$db->fetch_all('SELECT * FROM table WHERE col = ?', NULL);
-$db->fetch_row('SELECT * FROM table WHERE ID = ?', 1);
-$db->fetch_col('SELECT col FROM table WHERE ID > ?', 1);
-$db->fetch_var('SELECT item FROM table WHERE ID = ?', 1);
-
-/* automatic IN-expansion */
+/* automatic in-expansion */
 $db->fetch_all('SELECT * FROM table WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
 
 /* automatic flattened arguments */
