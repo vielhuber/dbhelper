@@ -9,3 +9,4 @@ function db_update($table, $data, $condition = null) { global $db; return $db->u
 function db_delete($table, $conditions) { global $db; return $db->delete($table, $conditions); }
 function db_total_count() { global $db; return $db->total_count(); }
 function db_last_insert_id() { global $db; return $db->last_insert_id(); }
+function db_disconnect() { global $db; return $db->disconnect(); }

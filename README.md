@@ -19,8 +19,11 @@ $db = new dbhelper();
 ## Usage
 
 ```php
-/* connnect to database */
+/* connect to database */
 $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
+
+/* disconnect from database */
+$db->disconnect();
 
 /* create/update/delete */
 $id = $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
