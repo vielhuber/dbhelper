@@ -15,11 +15,11 @@ class dbhelper
             case 'pdo':
                 if ($engine == 'mysql')
                 {
-                    $sql = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $database, $username, $password, array(
+                    $sql = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $database, $username, $password, [
                         PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
                         PDO::ATTR_EMULATE_PREPARES => false,
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING
-                    ));
+                    ]);
                 }
                 if ($engine == 'postgres')
                 {
@@ -55,9 +55,33 @@ class dbhelper
         $this->sql = $sql;
     }
 
+    public function disconnect()
+    {
+        switch ($this->sql->driver)
+        {
+
+            case 'pdo':
+                $this->sql = null;
+                break;
+
+            case 'mysqli':
+                $this->sql->close();
+                break;
+
+            case 'wordpress':
+                // TODO
+                break;
+
+            case 'joomla':
+                // TODO
+                break;
+
+        }
+    }
+
     public function fetch_all($query)
     {
-        $data = array();
+        $data = [];
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
@@ -109,7 +133,7 @@ class dbhelper
 
     public function fetch_row($query)
     {
-        $data = array();
+        $data = [];
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
@@ -156,7 +180,7 @@ class dbhelper
 
     public function fetch_col($query)
     {
-        $data = array();
+        $data = [];
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
@@ -177,7 +201,7 @@ class dbhelper
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 if (!empty($data))
                 {
-                    $data_tmp = array();
+                    $data_tmp = [];
                     foreach ($data as $dat)
                     {
                         $data_tmp[] = $dat[ array_keys($dat)[0] ];
@@ -212,7 +236,7 @@ class dbhelper
 
     public function fetch_var($query)
     {
-        $data = array();
+        $data = [];
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
@@ -271,7 +295,7 @@ class dbhelper
 
     public function query($query)
     {
-        $data = array();
+        $data = [];
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
@@ -442,7 +466,7 @@ class dbhelper
         unset($params[0]);
         $params = array_values($params);
 
-        $keys = array();
+        $keys = [];
         $values = $params;
         foreach ($params as $key => $value)
         {
@@ -622,7 +646,7 @@ class dbhelper
             $params = stripslashes_deep($params);
         }
 
-        return array($return, $params);
+        return [$return, $params];
 
     }
 
@@ -659,7 +683,7 @@ class dbhelper
                 $query .= ' AND ';
             }
         }
-        $args = array();
+        $args = [];
         $args[] = $query;
         foreach ($data as $d)
         {
