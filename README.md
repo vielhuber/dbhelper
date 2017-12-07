@@ -26,7 +26,7 @@ $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
 $db->disconnect();
 
 /* create/update/delete */
-$id = $db->insert('tablename', ['id' => 1, 'name' => 'foo']);
+$id = $db->insert('tablename', ['id' => 1, 'col1' => 'foo']);
 $db->update('tablename', ['col1' => 'foo', 'col2' => 'bar'], ['id' => 1]);
 $db->delete('tablename', ['id' => 1]);
 
