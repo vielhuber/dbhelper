@@ -54,6 +54,50 @@ class Test extends \PHPUnit\Framework\TestCase
         $this->assertSame( $this->db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', 'foo'), 0 );
         $this->db->clear('dbhelper');
     }
+
+    function test__fetch_all()
+    {
+        $id1 = $this->db->insert('test', ['col1' => 'foo']);
+        $id2 = $this->db->insert('test', ['col1' => 'bar']);
+        $this->assertSame( $this->db->fetch_all('SELECT * FROM test WHERE col1 = ?', 'foo'), [['id' => $id1, 'col1' => 'foo', 'col2' => null, 'col3' => null]] );
+        $this->assertSame( $this->db->fetch_all('SELECT * FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'), [['id' => $id1, 'col1' => 'foo', 'col2' => null, 'col3' => null],['id' => $id2, 'col1' => 'bar', 'col2' => null, 'col3' => null]] );
+        $this->db->clear('dbhelper');
+    }
+
+    function test__fetch_row()
+    {
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo', 'col2' => null, 'col3' => null] );
+        $this->db->clear('dbhelper');
+    }
+
+    function test__fetch_col()
+    {
+        $this->db->insert('test', ['col1' => 'foo']);
+        $this->db->insert('test', ['col1' => 'bar']);
+        $this->assertSame( $this->db->fetch_col('SELECT col1 FROM test'), ['foo', 'bar'] );
+        $this->db->clear('dbhelper');
+    }
+
+    function test__fetch_var()
+    {
+        $id1 = $this->db->insert('test', ['col1' => 'foo']);
+        $id2 = $this->db->insert('test', ['col1' => 'bar']);
+        $this->assertSame( $this->db->fetch_var('SELECT col1 FROM test WHERE id = ?', $id1), 'foo' );
+        $this->assertSame( $this->db->fetch_var('SELECT col1 FROM test WHERE id = ?', $id2), 'bar' );
+        $this->db->clear('dbhelper');
+    }
+
+    function test__flattened_args()
+    {
+        $id = $this->db->insert('test', ['col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz']);
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', 'foo', 'bar', 'baz'), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo'], ['bar'], ['baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo', 'bar'], 'baz'), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', 'foo', ['bar', 'baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo', 'bar', 'baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->db->clear('dbhelper'); 
+    }
     
     /*
     $this->db->query('

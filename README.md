@@ -36,6 +36,11 @@ $db->fetch_row('SELECT * FROM tablename WHERE ID = ?', 1);
 $db->fetch_col('SELECT col FROM tablename WHERE ID > ?', 1);
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
+/* automatic flattened arguments */
+$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,5,6]);
+=>
+$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
+
 /* raw queries */
 $id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
 $db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
@@ -43,11 +48,6 @@ $db->query('DELETE FROM tablename WHERE ID = ?', 1);
 
 /* automatic in-expansion */
 $db->fetch_all('SELECT * FROM tablename WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
-
-/* automatic flattened arguments */
-$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,5,6]);
-=>
-$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 
 /* support for null values */
 $db->fetch_all('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
