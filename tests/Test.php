@@ -98,40 +98,80 @@ class Test extends \PHPUnit\Framework\TestCase
         $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo', 'bar', 'baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
         $this->db->clear('dbhelper'); 
     }
-    
-    /*
-    $this->db->query('
-        CREATE TABLE test
-        (
-          id int(255) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-          col1 varchar(255),
-          col2 varchar(255),
-          col3 varchar(255)
-        )
-    ');
 
-    $count = $this->db->fetch_var('SELECT COUNT(*) FROM test');
-    $this->assertEquals($count, 2);
-    $this->db->delete('test', ['id' => 2]);
-    $count = $this->db->fetch_var('SELECT COUNT(*) FROM test');
-    $this->assertEquals($count, 1);
+    function test__in_expansion()
+    {
+        $this->db->insert('test', [
+            ['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'],
+            ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'],
+            ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar'],
+        ]);
+        $this->assertSame(
+            $this->db->fetch_all('SELECT * FROM test WHERE col1 = ? AND col2 IN (?)', 'foo', ['bar','baz']),
+            [['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'],['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo']]
+        );
+        $this->assertSame(
+            $this->db->fetch_all('SELECT * FROM test WHERE col1 = ? AND col2 NOT IN (?)', 'foo', ['bar','baz']),
+            [['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']]
+        );
+        $this->assertSame(
+            $this->db->fetch_all('SELECT * FROM test WHERE col1 IN (?)', ['foo','bar','baz']),
+            [['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'], ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'], ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']]
+        );
+        $this->db->clear('dbhelper');
+    }
 
-    $this->db->query('INSERT INTO test(col1, col2) VALUES(?, ?)', 1, 2);
-    $this->db->query('INSERT INTO test(col1, col2) VALUES(?, ?)', 1, [2]);
-    $this->db->query('INSERT INTO test(col1, col2) VALUES(?, ?)', [1, 1337]);
-    $this->db->query('UPDATE test SET col1 = ? WHERE col2 = ?', 'foo', 1337);
-    $this->db->query('DELETE FROM test WHERE col2 = ?', 2);
-    $value = $this->db->fetch_var('SELECT col1 FROM test WHERE col2 = ?', 1337);
-    $this->assertEquals($value, 'foo');
+    function test__null_values()
+    {
+        $id = $this->db->insert('test', ['col1' => 'foo', 'col2' => null, 'col3' => 'bar']);
+        $this->db->query('UPDATE test SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
+        $this->assertSame(
+            $this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id),
+            ['id' => $id, 'col1' => null, 'col2' => null, 'col3' => 'bar']
+        );
+        $id = $this->db->insert('test', ['col1' => 'foo', 'col2' => null, 'col3' => 'bar']);
+        $this->db->query('UPDATE test SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
+        $this->assertSame(
+            $this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id),
+            ['id' => $id, 'col1' => null, 'col2' => null, 'col3' => 'bar']
+        );
+    }
 
-
-    $id = $this->db->insert('test', ['id' => 42, 'col1' => '424242', 'col2' => '434343']);
-    $result = $this->db->fetch_all('SELECT * FROM test WHERE col1 = ? AND col2 IN (?)', '424242', ['414141','434343','454545']);
-    $this->assertEquals( $result[0], ['id' => 42, 'col1' => '424242', 'col2' => '434343', 'col3' => null] );
-    
-    $id = $this->db->insert('test', ['id' => 43, 'col1' => 42, 'col2' => null, 'col3' => 'foo']);
-    $this->db->fetch_all('UPDATE test SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
-    $this->assertNull( $this->db->fetch_var('SELECT col1 FROM test WHERE id = ?', 43) );
-    */
+    function test__batch()
+    {
+        $this->db->insert('test', [
+            ['id' => 1, 'col1' => 'foo'],
+            ['id' => 2, 'col1' => 'bar'],
+            ['id' => 3, 'col1' => 'baz']
+        ]);
+        $this->assertSame(
+            $this->db->fetch_all('SELECT * FROM test'),
+            [
+                ['id' => 1, 'col1' => 'foo', 'col2' => null, 'col3' => null],
+                ['id' => 2, 'col1' => 'bar', 'col2' => null, 'col3' => null],
+                ['id' => 3, 'col1' => 'baz', 'col2' => null, 'col3' => null]
+            ]
+        );
+        $this->db->update('test', [
+            [['col1' => 'foo1'], ['id' => 1]],
+            [['col1' => 'bar1'], ['id' => 2]],
+            [['col1' => 'baz1'], ['id' => 3]]
+        ]);
+        $this->assertSame(
+            $this->db->fetch_all('SELECT * FROM test'),
+            [
+                ['id' => 1, 'col1' => 'foo1', 'col2' => null, 'col3' => null],
+                ['id' => 2, 'col1' => 'bar1', 'col2' => null, 'col3' => null],
+                ['id' => 3, 'col1' => 'baz1', 'col2' => null, 'col3' => null]
+            ]
+        );
+        $this->db->delete('test', [
+            ['id' => 1],
+            ['id' => 2],
+            ['id' => 3]
+        ]);
+        $this->assertSame($this->db->fetch_all('SELECT * FROM test'), []);
+        $this->db->clear('dbhelper');
+    }
 
 }
