@@ -88,7 +88,7 @@ $db->connect('wordpress');
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
 
-as return values dbhelper usually returns arrays instead of objects. if you use it with wordpress, objects are returned.
+as return values dbhelper usually returns associative arrays. if you use it with wordpress, objects are returned.
 
 zhere is also a static version with static function calls (if you only use a single instance of dbhelper):
 ```php
