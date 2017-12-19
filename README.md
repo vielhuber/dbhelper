@@ -2,21 +2,21 @@
 
 dbhelper is a small php wrapper for mysql/pgsql databases.
 
-## Installation
+## installation
 
-Install once with composer:
+install once with composer:
 ```
 composer require vielhuber/dbhelper
 ```
 
-Then add this to your files:
+then add this to your files:
 ```php
 require __DIR__.'/vendor/autoload.php';
 use vielhuber\dbhelper\dbhelper;
 $db = new dbhelper();
 ```
 
-## Usage
+## usage
 
 ```php
 /* connect to database */
@@ -82,13 +82,15 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
 ```
 
-This also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
+this also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
 ```php
 $db->connect('wordpress');
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
 
-There is also a static version with static function calls (if you only use a single instance of dbhelper):
+as return values dbhelper usually returns arrays instead of objects. if you use it with wordpress, objects are returned.
+
+zhere is also a static version with static function calls (if you only use a single instance of dbhelper):
 ```php
 require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
 db_fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
