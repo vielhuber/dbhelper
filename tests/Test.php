@@ -174,4 +174,26 @@ class Test extends \PHPUnit\Framework\TestCase
         $this->db->clear('dbhelper');
     }
 
+    function test__errors()
+    {
+        try
+        {
+            $this->db->insert('test', ['id' => 1, 'col1' => (object)['foo' => 'bar']]);
+        }
+        catch(Exception $e)
+        {
+            $this->assertTrue(true);
+        }
+        try
+        {
+            $this->db->query('SELCET * FROM test');
+        }
+        catch(Exception $e)
+        {
+            $this->assertTrue(true);
+        }
+        $this->assertSame($this->db->fetch_var('SELECT COUNT(*) FROM test'), 0);
+        $this->db->clear('dbhelper');
+    }
+
 }

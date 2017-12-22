@@ -96,8 +96,7 @@ class dbhelper
                 if ($stmt->errorCode() != 0)
                 {
                     $errors = $stmt->errorInfo();
-                    echo($errors[2]);
-                    return false;
+                    throw new \Exception($errors[2]);
                 }
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
@@ -148,8 +147,7 @@ class dbhelper
                 if ($stmt->errorCode() != 0)
                 {
                     $errors = $stmt->errorInfo();
-                    echo($errors[2]);
-                    return false;
+                    throw new \Exception($errors[2]);
                 }
                 $data = $stmt->fetch(PDO::FETCH_ASSOC);
                 break;
@@ -195,8 +193,7 @@ class dbhelper
                 if ($stmt->errorCode() != 0)
                 {
                     $errors = $stmt->errorInfo();
-                    echo($errors[2]);
-                    return false;
+                    throw new \Exception($errors[2]);
                 }
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 if (!empty($data))
@@ -251,8 +248,7 @@ class dbhelper
                 if ($stmt->errorCode() != 0)
                 {
                     $errors = $stmt->errorInfo();
-                    echo($errors[2]);
-                    return false;
+                    throw new \Exception($errors[2]);
                 }
                 $data = $stmt->fetchObject();
                 if (empty($data))
@@ -310,8 +306,7 @@ class dbhelper
                 if ($stmt->errorCode() != 0)
                 {
                     $errors = $stmt->errorInfo();
-                    echo($errors[2]);
-                    return false;
+                    throw new \Exception($errors[2]);
                 }
                 return $stmt->rowCount();
                 break;
@@ -571,6 +566,15 @@ class dbhelper
                 }
             }
             $params = $params_flattened;
+        }
+
+        // try to sort out bad queries
+        foreach($params as $params__key=>$params__value)
+        {
+            if( is_object($params__value) )
+            {
+                throw new \Exception('object in query');
+            }
         }
 
         // NULL values are treated specially: modify the query
