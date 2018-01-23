@@ -40,7 +40,7 @@ class dbhelper
             case 'wordpress':
                 global $wpdb;
                 $engine = 'mysql';
-                $wpdb->show_errors = false;
+                $wpdb->show_errors = true;
                 $wpdb->suppress_errors = false;
                 $sql = $wpdb;
                 break;
@@ -119,6 +119,10 @@ class dbhelper
                 {
                     $data = $this->sql->get_results($query);
                 }
+                if( $this->sql->last_error )
+                {
+                    throw new \Exception($this->sql->last_error);
+                }
                 break;
 
             case 'joomla':
@@ -164,6 +168,10 @@ class dbhelper
                 else
                 {
                     $data = $this->sql->get_row($query);
+                }
+                if( $this->sql->last_error )
+                {
+                    throw new \Exception($this->sql->last_error);
                 }
                 break;
 
@@ -219,6 +227,10 @@ class dbhelper
                 else
                 {
                     $data = $this->sql->get_col($query);
+                }
+                if( $this->sql->last_error )
+                {
+                    throw new \Exception($this->sql->last_error);
                 }
                 break;
 
@@ -278,6 +290,10 @@ class dbhelper
                 {
                     $data = $this->sql->get_var($query);
                 }
+                if( $this->sql->last_error )
+                {
+                    throw new \Exception($this->sql->last_error);
+                }
                 break;
 
             case 'joomla':
@@ -323,6 +339,10 @@ class dbhelper
                 else
                 {
                     $data = $this->sql->query($query);
+                }
+                if( $this->sql->last_error )
+                {
+                    throw new \Exception($this->sql->last_error);
                 }
                 break;
 
