@@ -50,6 +50,7 @@ class dbhelper
                 break;
 
         }
+        $sql->database = $database;
         $sql->driver = $driver;
         $sql->engine = $engine;
         $this->sql = $sql;
@@ -860,6 +861,57 @@ class dbhelper
         $positions = $this->find_occurences($haystack, $needle);
         if(empty($positions) || $index > (count($positions)-1)) { return null; }
         return $positions[$index];
+    }
+
+    public function setup_logging($args)
+    {
+        // create a logging table (if not exists)
+        $this->query('
+            CREATE TABLE IF NOT EXISTS '.$args['logging_table'].' (
+              id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+              action varchar(10) NOT NULL,
+              data_table varchar(100) NOT NULL,
+              data_row varchar(100) DEFAULT NULL,
+              data_id bigint(20) UNSIGNED NOT NULL,
+              data_value varchar(1000) DEFAULT NULL,
+              updated_at datetime(0) NOT NULL,
+              updated_by varchar(1000) DEFAULT NULL,
+              PRIMARY KEY (`id`) USING BTREE
+            )
+        ');
+
+        // append two columns "updated_by" and "updated_at" to every table in the database (if not exists)
+        foreach( $this->get_tables() as $table__value )
+        {
+            if( isset($args['exclude']) && in_array($table__value, $args['exclude']) )
+            {
+                continue;
+            }
+            if( $table__value === $args['logging_table'] )
+            {
+                continue;
+            }
+            $this->query('
+                ALTER TABLE '.$args['logging_table'].'
+                ADD COLUMN updated_by varchar(50),
+                ADD COLUMN updated_at datetime(0) ON UPDATE CURRENT_TIMESTAMP(0)
+            ');
+        }
+
+        // create triggers for all insert/update/delete events (if not exists)
+        /* TODO */
+
+        // delete old logging entries based on the "delete_older" option
+        if( isset($args['delete_older']) && is_numeric($args['delete_older']) )
+        {
+            $this->query('DELETE FROM '.$args['logging_table'].' WHERE updated_by < '.strtotime('now - '.$args['delete_older'].' months').'');
+        }
+
+    }
+
+    public function get_tables()
+    {
+        return $this->fetch_row('SELECT table_name FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name', $this->sql->database);
     }
 
 }

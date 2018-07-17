@@ -97,10 +97,9 @@ dbhelper can support setting up a mature logging system.
 simply run this command once:
 
 ```php
-$db->setupLogging([
+$db->setup_logging([
     'logging_table' => 'logs',
     'exclude_tables' => [],
-    'execute' => true,
     'delete_older' => 12 // months
 ]);
 ```

@@ -10,3 +10,4 @@ function db_delete($table, $conditions) { global $db; return $db->delete($table,
 function db_total_count() { global $db; return $db->total_count(); }
 function db_last_insert_id() { global $db; return $db->last_insert_id(); }
 function db_disconnect() { global $db; return $db->disconnect(); }
+function db_setup_logging($args) { global $db; return $db->setup_logging($args); }
