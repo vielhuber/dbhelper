@@ -26,6 +26,7 @@ class dbhelper
                     $sql = new PDO('pgsql:host=' . $host . ';port=' . $port . ';dbname=' . $database, $username, $password);
                     $sql->query('SET NAMES UTF8');
                 }
+                $sql->database = $database;
                 break;
 
             case 'mysqli':
@@ -35,6 +36,7 @@ class dbhelper
                 {
                     die('SQL Connection failed: ' . $sql->connect_error);
                 }
+                $sql->database = $database;
                 break;
 
             case 'wordpress':
@@ -43,6 +45,7 @@ class dbhelper
                 $wpdb->show_errors = true;
                 $wpdb->suppress_errors = false;
                 $sql = $wpdb;
+                $sql->database = $wpdb->dbname;
                 break;
 
             case 'joomla':
@@ -50,7 +53,6 @@ class dbhelper
                 break;
 
         }
-        $sql->database = $database;
         $sql->driver = $driver;
         $sql->engine = $engine;
         $this->sql = $sql;
@@ -868,22 +870,22 @@ class dbhelper
         // create a logging table (if not exists)
         $this->query('
             CREATE TABLE IF NOT EXISTS '.$args['logging_table'].' (
-              id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-              action varchar(10) NOT NULL,
-              data_table varchar(100) NOT NULL,
-              data_row varchar(100) DEFAULT NULL,
-              data_id bigint(20) UNSIGNED NOT NULL,
-              data_value varchar(1000) DEFAULT NULL,
-              updated_at datetime(0) NOT NULL,
-              updated_by varchar(1000) DEFAULT NULL,
+              `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `action` varchar(10) NOT NULL,
+              `table` varchar(100) NOT NULL,
+              `key` bigint(20) UNSIGNED NOT NULL,
+              `column` varchar(100) DEFAULT NULL,
+              `value` varchar(1000) DEFAULT NULL,
+              `updated_by` varchar(1000) DEFAULT NULL,
+              `updated_at` datetime(0) DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) NOT NULL,
               PRIMARY KEY (`id`) USING BTREE
             )
         ');
 
-        // append two columns "updated_by" and "updated_at" to every table in the database (if not exists)
+        // append a single column "updated_by" to every table in the database (if not exists)
         foreach( $this->get_tables() as $table__value )
         {
-            if( isset($args['exclude']) && in_array($table__value, $args['exclude']) )
+            if( isset($args['exclude_tables']) && in_array($table__value, $args['exclude_tables']) )
             {
                 continue;
             }
@@ -891,27 +893,110 @@ class dbhelper
             {
                 continue;
             }
-            $this->query('
-                ALTER TABLE '.$args['logging_table'].'
-                ADD COLUMN updated_by varchar(50),
-                ADD COLUMN updated_at datetime(0) ON UPDATE CURRENT_TIMESTAMP(0)
-            ');
+            if( !$this->table_has_column($table__value, 'updated_by') )
+            {
+                $this->query('ALTER TABLE '.$table__value.' ADD COLUMN updated_by varchar(50)');
+            }
         }
 
         // create triggers for all insert/update/delete events (if not exists)
-        /* TODO */
+        foreach( $this->get_tables() as $table__value )
+        {
+            if( isset($args['exclude_tables']) && in_array($table__value, $args['exclude_tables']) )
+            {
+                continue;
+            }
+            if( $table__value === $args['logging_table'] )
+            {
+                continue;
+            }
+
+            $primary_key = $this->get_primary_key($table__value);
+
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
+
+            /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
+
+            $query = '                
+                CREATE TRIGGER `trigger-logging-insert-'.$table__value.'`
+                AFTER INSERT ON '.$table__value.' FOR EACH ROW
+                BEGIN
+                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($args, $table__value, $primary_key) {
+                        if( $column === $primary_key || $column === 'updated_by' ) { return $carry; }
+                        $carry .= '
+                            INSERT INTO '.$args['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                            VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
+                        ';
+                        return $carry;
+                    }).'
+                END
+            ';
+
+            $this->query($query);
+
+            $query = '                
+                CREATE TRIGGER `trigger-logging-update-'.$table__value.'`
+                AFTER UPDATE ON '.$table__value.' FOR EACH ROW
+                BEGIN
+                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($args, $table__value, $primary_key) {
+                        if( $column === $primary_key || $column === 'updated_by' ) { return $carry; }
+                        $carry .= '
+                            IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
+                                INSERT INTO '.$args['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                                VALUES(\'update\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
+                            END IF;
+                        ';
+                        return $carry;
+                    }).'
+                END
+            ';
+
+            $this->query($query);
+
+            $query = '                
+                CREATE TRIGGER `trigger-logging-delete-'.$table__value.'`
+                AFTER DELETE ON '.$table__value.' FOR EACH ROW
+                BEGIN
+                    IF( NOT EXISTS( SELECT * FROM '.$args['logging_table'].' WHERE `action` = \'delete\' AND `table` = \''.$table__value.'\' AND `key` = OLD.`'.$primary_key.'` ) ) THEN
+                        INSERT INTO '.$args['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                        VALUES(\'delete\', \''.$table__value.'\', OLD.`'.$primary_key.'`, NULL, NULL, OLD.updated_by);
+                    END IF;
+                END
+            ';
+
+            $this->query($query);
+
+        }
 
         // delete old logging entries based on the "delete_older" option
         if( isset($args['delete_older']) && is_numeric($args['delete_older']) )
         {
-            $this->query('DELETE FROM '.$args['logging_table'].' WHERE updated_by < '.strtotime('now - '.$args['delete_older'].' months').'');
+            $this->query('DELETE FROM '.$args['logging_table'].' WHERE updated_at < ?', date('Y-m-d',strtotime('now - '.$args['delete_older'].' months')));
         }
 
     }
 
     public function get_tables()
     {
-        return $this->fetch_row('SELECT table_name FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name', $this->sql->database);
+        return $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name', $this->sql->database);
+    }
+
+    public function get_columns($table)
+    {
+        return $this->fetch_col('SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ?', $this->sql->database, $table);
+    }
+
+    public function table_has_column($table, $column)
+    {
+        $count = $this->fetch_var('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?', $this->sql->database, $table, $column);
+        return $count > 0;
+    }
+
+    public function get_primary_key($table)
+    {
+        return $this->fetch_row('SHOW KEYS FROM `'.$table.'` WHERE Key_name = ?', 'PRIMARY')->Column_name;
     }
 
 }
