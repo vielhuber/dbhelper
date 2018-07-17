@@ -25,7 +25,7 @@ $db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
 /* disconnect from database */
 $db->disconnect();
 
-/* create/update/delete */
+/* insert/update/delete */
 $id = $db->insert('tablename', ['col1' => 'foo']);
 $db->update('tablename', ['col1' => 'bar'], ['id' => $id]);
 $db->delete('tablename', ['id' => $id]);
@@ -38,7 +38,7 @@ $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 /* automatic flattened arguments */
 $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,5,6]);
-=>
+    // gets transformed to
 $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 
 /* automatic in-expansion */
@@ -46,7 +46,7 @@ $db->fetch_all('SELECT * FROM tablename WHERE col1 = ? AND col2 IN (?)', 1, [2,3
 
 /* support for null values */
 $db->query('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
-=>
+    // gets transformed to
 $db->query('UPDATE tablename SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
 /* delete all tables (without dropping the whole database) */
@@ -56,6 +56,14 @@ $db->clear('database');
 $id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
 $db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM tablename WHERE ID = ?', 1);
+
+/* total count without limit */
+$db->fetch_all('SELECT * FROM tablename LIMIT 10');
+$db->total_count();
+
+/* last insert id */
+$db->insert('tablename', ['col1' => 'foo']);
+$db->last_insert_id();
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
@@ -82,15 +90,21 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
 ```
 
+### wordpress support
+
 this also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
 ```php
 $db->connect('wordpress');
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
 
+### return values
+
 as return values dbhelper usually returns associative arrays. if you use it with wordpress, objects are returned.
 
-zhere is also a static version with static function calls (if you only use a single instance of dbhelper):
+### static version
+
+here is also a static version with static function calls (if you only use a single instance of dbhelper):
 ```php
 require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
 db_fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);

@@ -174,6 +174,19 @@ class Test extends \PHPUnit\Framework\TestCase
         $this->db->clear('dbhelper');
     }
 
+    function test__total_count()
+    {
+        $this->assertSame($this->db->total_count(), 0);
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $this->assertSame($this->db->total_count(), 1);
+    }
+
+    function test__last_insert_id()
+    {
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $this->assertSame($id, $this->db->last_insert_id());
+    }
+
     function test__errors()
     {
         try
