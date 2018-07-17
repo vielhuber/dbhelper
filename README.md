@@ -105,7 +105,7 @@ $db->setupLogging([
 ]);
 ```
 
-this does three things:
+this does four things:
 
 - it creates a logging table (if not exists)
 - it appends two columns "updated_by" and "updated_at" to every table in the database (if not exists)
