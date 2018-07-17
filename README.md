@@ -90,6 +90,65 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 */
 ```
 
+### logging
+
+dbhelper can support setting up a mature logging system.
+
+simply run this command once:
+
+```php
+$db->generateLogging([
+    'logging_table' => 'logs',
+    'exclude_tables' => [],
+    'execute' => true
+]);
+```
+
+this does three things:
+
+- it creates a logging table (if not exists)
+- it appends two columns "updated_by" and "updated_at" to every table in the database (if not exists)
+- it creates triggers for all insert/update/delete events (if not exists)
+
+you can/should run this script on a daily basis to react to schema changes.
+
+we now only have to take care of the new two fields updated_at and updated_by.
+
+- the field updated_at is automatically updated on all insert/update events by the database itself.
+- the field updated_by must be populated by the web application on all insert/update and before delete queries.
+
+we either can provide the value on every insert/update:
+
+```php
+    $db->insert('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()]);
+    $db->update('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()]);
+```
+
+or we can let dbhelper magically inject it on every insert/update for us:
+
+```php
+$db = new dbhelper({
+    'inject_on_insert_or_update' => ['updated_by' => get_current_user_id()]
+});
+```
+
+as mentionned above we have to update the column updated_by before every delete to log the user who deleted the row.
+
+we can do this manually:
+
+```php
+    $db->update('tablename', ['updated_by' => get_current_user_id()]);
+    $db->delete('tablename', ['id' => 42]);
+```
+
+or we can let dbhelper do again the heavy lifting:
+
+```php
+$db = new dbhelper({
+    'before_delete_do_update' => ['updated_by' => get_current_user_id()]
+});
+```
+
 ### wordpress support
 
 this also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
