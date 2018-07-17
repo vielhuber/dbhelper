@@ -97,10 +97,11 @@ dbhelper can support setting up a mature logging system.
 simply run this command once:
 
 ```php
-$db->generateLogging([
+$db->setupLogging([
     'logging_table' => 'logs',
     'exclude_tables' => [],
-    'execute' => true
+    'execute' => true,
+    'delete_older' => 12 // months
 ]);
 ```
 
@@ -109,13 +110,14 @@ this does three things:
 - it creates a logging table (if not exists)
 - it appends two columns "updated_by" and "updated_at" to every table in the database (if not exists)
 - it creates triggers for all insert/update/delete events (if not exists)
+- it deletes old logging entries based on the "delete_older" option
 
 you can/should run this script on a daily basis to react to schema changes.
 
 we now only have to take care of the new two fields updated_at and updated_by.
 
-- the field updated_at is automatically updated on all insert/update events by the database itself.
-- the field updated_by must be populated by the web application on all insert/update and before delete queries.
+- the field "updated_at" is automatically updated on all insert/update events by the database itself.
+- the field "updated_by" must be populated by the web application on all insert/update and before delete queries.
 
 we either can provide the value on every insert/update:
 
@@ -132,7 +134,7 @@ $db = new dbhelper({
 });
 ```
 
-as mentionned above we have to update the column updated_by before every delete to log the user who deleted the row.
+as mentionned above we have to update the column "updated_by" before every delete to log the user who deleted the row.
 
 we can do this manually:
 
@@ -148,6 +150,8 @@ $db = new dbhelper({
     'before_delete_do_update' => ['updated_by' => get_current_user_id()]
 });
 ```
+
+that's it – happy logging.
 
 ### wordpress support
 
