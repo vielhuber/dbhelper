@@ -92,24 +92,27 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 
 ### logging
 
-dbhelper can support setting up a mature logging system. simply run this command once:
+dbhelper can support setting up a mature logging system.
 
 ```php
-$db->setup_logging([
+$db = new dbhelper([
     'logging_table' => 'logs',
     'exclude_tables' => [],
-    'delete_older' => 12 // months
+    'delete_older' => 12, // months
+    'updated_by' => get_current_user_id()
 ]);
+
+$db->setup_logging();
 ```
 
-this does four things:
+setup_logging() does four things:
 
 - it creates a logging table (if not exists)
 - it appends a single column "updated_by" to every table in the database (if not exists)
 - it creates triggers for all insert/update/delete events (if not exists)
 - it deletes old logging entries based on the "delete_older" option
 
-you can/should run this script on a daily basis to react to schema changes.
+you can/should run this method on a daily basis to react to schema changes.
 
 we now have to adjust our queries. "updated_by" must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
 
@@ -125,9 +128,7 @@ $db->delete('tablename', ['id' => 42]);
 instead of all this we can let dbhelper magically do the heavy lifting on every insert/update/delete for us:
 
 ```php
-$db = new dbhelper({
-    'enable_logging' => get_current_user_id()
-});
+$db->enable_auto_inject();
 ```
 
 dbhelper then automatically injects the "updated_by" column on all insert/update statements and inserts a log entry before every delete query (all queries are handled, even those who are sent with $db->query).

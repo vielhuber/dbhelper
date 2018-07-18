@@ -7,6 +7,17 @@ class dbhelper
 {
 
     public $sql = null;
+    public $config = false;
+
+    public function __construct($config = [])
+    {
+        $this->config = $config;
+    }
+
+    public function enable_auto_inject()
+    {
+        $this->config['auto_inject'] = true;
+    }
 
     public function connect($driver, $engine = null, $host = null, $username = null, $password = null, $database = null, $port = 3306)
     {
@@ -315,6 +326,11 @@ class dbhelper
         unset($params[0]);
         $params = array_values($params);
         list($query, $params) = $this->preparse_query($query, $params);
+
+        if( isset($this->config['auto_inject']) && $this->config['auto_inject'] === true )
+        {
+            $query = $this->handle_logging($query, $params);
+        }
 
         switch ($this->sql->driver)
         {
@@ -673,6 +689,9 @@ class dbhelper
             $params = stripslashes_deep($params);
         }
 
+        // trim final result
+        $return = trim($return);
+
         return [$return, $params];
 
     }
@@ -865,11 +884,11 @@ class dbhelper
         return $positions[$index];
     }
 
-    public function setup_logging($args)
+    public function setup_logging()
     {
         // create a logging table (if not exists)
         $this->query('
-            CREATE TABLE IF NOT EXISTS '.$args['logging_table'].' (
+            CREATE TABLE IF NOT EXISTS '.$this->config['logging_table'].' (
               `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
               `action` varchar(10) NOT NULL,
               `table` varchar(100) NOT NULL,
@@ -885,11 +904,11 @@ class dbhelper
         // append a single column "updated_by" to every table in the database (if not exists)
         foreach( $this->get_tables() as $table__value )
         {
-            if( isset($args['exclude_tables']) && in_array($table__value, $args['exclude_tables']) )
+            if( isset($this->config['exclude_tables']) && in_array($table__value, $this->config['exclude_tables']) )
             {
                 continue;
             }
-            if( $table__value === $args['logging_table'] )
+            if( $table__value === $this->config['logging_table'] )
             {
                 continue;
             }
@@ -902,20 +921,22 @@ class dbhelper
         // create triggers for all insert/update/delete events (if not exists)
         foreach( $this->get_tables() as $table__value )
         {
-            if( isset($args['exclude_tables']) && in_array($table__value, $args['exclude_tables']) )
+            if( isset($this->config['exclude_tables']) && in_array($table__value, $this->config['exclude_tables']) )
             {
                 continue;
             }
-            if( $table__value === $args['logging_table'] )
+            if( $table__value === $this->config['logging_table'] )
             {
                 continue;
             }
 
             $primary_key = $this->get_primary_key($table__value);
 
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
+            // for these special statements we have do use directly exec, not prepare
+
+            $this->sql->exec('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
+            $this->sql->exec('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
+            $this->sql->exec('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
 
             /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
 
@@ -923,10 +944,10 @@ class dbhelper
                 CREATE TRIGGER `trigger-logging-insert-'.$table__value.'`
                 AFTER INSERT ON '.$table__value.' FOR EACH ROW
                 BEGIN
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($args, $table__value, $primary_key) {
+                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
                         if( $column === $primary_key || $column === 'updated_by' ) { return $carry; }
                         $carry .= '
-                            INSERT INTO '.$args['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                            INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
                             VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
                         ';
                         return $carry;
@@ -934,17 +955,17 @@ class dbhelper
                 END
             ';
 
-            $this->query($query);
+            $this->sql->exec($query);
 
             $query = '                
                 CREATE TRIGGER `trigger-logging-update-'.$table__value.'`
                 AFTER UPDATE ON '.$table__value.' FOR EACH ROW
                 BEGIN
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($args, $table__value, $primary_key) {
+                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
                         if( $column === $primary_key || $column === 'updated_by' ) { return $carry; }
                         $carry .= '
                             IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
-                                INSERT INTO '.$args['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                                INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
                                 VALUES(\'update\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
                             END IF;
                         ';
@@ -953,27 +974,27 @@ class dbhelper
                 END
             ';
 
-            $this->query($query);
+            $this->sql->exec($query);
 
             $query = '                
                 CREATE TRIGGER `trigger-logging-delete-'.$table__value.'`
                 AFTER DELETE ON '.$table__value.' FOR EACH ROW
                 BEGIN
-                    IF( NOT EXISTS( SELECT * FROM '.$args['logging_table'].' WHERE `action` = \'delete\' AND `table` = \''.$table__value.'\' AND `key` = OLD.`'.$primary_key.'` ) ) THEN
-                        INSERT INTO '.$args['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE `action` = \'delete\' AND `table` = \''.$table__value.'\' AND `key` = OLD.`'.$primary_key.'` ) ) THEN
+                        INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
                         VALUES(\'delete\', \''.$table__value.'\', OLD.`'.$primary_key.'`, NULL, NULL, OLD.updated_by);
                     END IF;
                 END
             ';
 
-            $this->query($query);
+            $this->sql->exec($query);
 
         }
 
         // delete old logging entries based on the "delete_older" option
-        if( isset($args['delete_older']) && is_numeric($args['delete_older']) )
+        if( isset($this->config['delete_older']) && is_numeric($this->config['delete_older']) )
         {
-            $this->query('DELETE FROM '.$args['logging_table'].' WHERE updated_at < ?', date('Y-m-d',strtotime('now - '.$args['delete_older'].' months')));
+            $this->query('DELETE FROM '.$this->config['logging_table'].' WHERE updated_at < ?', date('Y-m-d',strtotime('now - '.$this->config['delete_older'].' months')));
         }
 
     }
@@ -996,7 +1017,90 @@ class dbhelper
 
     public function get_primary_key($table)
     {
-        return $this->fetch_row('SHOW KEYS FROM `'.$table.'` WHERE Key_name = ?', 'PRIMARY')->Column_name;
+        return ((object)$this->fetch_row('SHOW KEYS FROM `'.$table.'` WHERE Key_name = ?', 'PRIMARY'))->Column_name;
+    }
+
+    public function handle_logging($query, $params)
+    {
+        $table = $this->get_table_name_from_query($query);
+
+        if( isset($this->config['exclude_tables']) && in_array($table, $this->config['exclude_tables']) )
+        {
+            return $query;
+        }
+
+        if( stripos($query, 'INSERT') === 0 )
+        {
+
+            $pos1 = strpos($query,')');
+            $pos2 = strrpos($query,')');
+            $pos3 = stripos($query, 'INTO')+strlen('INTO');
+            $pos4 = strpos($query, '(');
+            if( $pos1 === false || $pos2 === false || $pos2 != strlen($query)-1 || strpos(substr($query, 0, $pos1),'updated_by') !== false )
+            {
+                return $query;
+            }
+            //echo PHP_EOL.$query.PHP_EOL;
+            $query = substr($query, 0, $pos1) . ',updated_by' . substr($query, $pos1, $pos2-$pos1) . ',\''.$this->config['updated_by'].'\'' . substr($query, $pos2);
+            //echo PHP_EOL.$query.PHP_EOL;
+        }
+
+        else if( stripos($query, 'UPDATE') === 0 )
+        {
+            $pos1 = stripos($query,'SET')+strlen('SET');
+            if( $pos1 !== false && strpos(substr($query, $pos1),'updated_by') === false )
+            {
+                //echo PHP_EOL.$query.PHP_EOL;
+                $query = substr($query, 0, $pos1) . ' updated_by = \''.$this->config['updated_by'].'\', ' . substr($query, $pos1);
+                //echo PHP_EOL.$query.PHP_EOL;
+            }
+        }
+
+        else if( stripos($query, 'DELETE') === 0 )
+        {
+            // fetch all ids that are affected
+            $ids = $this->fetch_col('SELECT '.$this->get_primary_key($table).' '.substr($query, stripos($query,'FROM')), $params);
+            foreach($ids as $id)
+            {
+                $this->insert('logs', ['action' => 'delete', 'table' => $table, 'key' => $id, 'updated_by' => $this->config['updated_by']]);
+            }
+        }
+
+        return $query;
+
+    }
+
+    public function get_table_name_from_query($query)
+    {
+        $table = '';
+
+        if( stripos($query, 'INSERT') === 0 )
+        {
+            $pos1 = stripos($query, 'INTO')+strlen('INTO');
+            $pos2 = strpos($query, '(');
+            $table = substr($query, $pos1, $pos2-$pos1);
+        }
+
+
+        else if( stripos($query, 'UPDATE') === 0 )
+        {
+            $pos1 = stripos($query,'UPDATE')+strlen('UPDATE');
+            $pos2 = stripos($query,'SET');
+            $table = substr($query, $pos1, $pos2-$pos1);
+        }
+
+
+        else if( stripos($query, 'DELETE') === 0 )
+        {
+            $pos1 = stripos($query,'FROM')+strlen('FROM');
+            $pos2 = stripos($query,'WHERE');
+            if( $pos2 === false ) { $pos2 = strlen($query); }
+            $table = substr($query, $pos1, $pos2-$pos1);
+        }
+
+        $table = trim(str_replace('`','',$table));
+
+        return $table;
     }
 
 }
