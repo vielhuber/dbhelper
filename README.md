@@ -115,10 +115,10 @@ $db = new dbhelper([
 $db->setup_logging();
 ```
 
-setup_logging() does four things:
+```setup_logging()``` does four things:
 
 - it creates a logging table (if not exists)
-- it appends a single column "updated_by" to every table in the database (if not exists)
+- it appends a single column ```updated_by``` to every table in the database (if not exists)
 - it creates triggers for all insert/update/delete events (if not exists)
 - it deletes old logging entries based on the "delete_older" option
 
@@ -126,17 +126,17 @@ you should run this method after a schema change (e.g. in your migrations) and y
 
 the logging table has the following schema:
 
-- ```id```
+- ```id```: unique identifier of that single change
 - ```log_event```: insert/update/delete
 - ```log_table```: name of the table of the modified row
 - ```log_key```: key of the modified row
 - ```log_column```: column of the modified row
 - ```log_value```: value of the modified row
-- ```log_uuid```: unique identifier of this action
+- ```log_uuid```: unique identifier of that row change
 - ```updated_by```: who did make that change
 - ```updated_at```: date and time of the event
 
-we now have to adjust our queries. "updated_by" must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
+we now have to adjust our queries. ```updated_by``` must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
 
 ```php
 $db->insert('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()]);
@@ -153,9 +153,9 @@ instead of all this we can let dbhelper magically do the heavy lifting on every 
 $db->enable_auto_inject();
 ```
 
-dbhelper then automatically injects the "updated_by" column on all insert/update statements and inserts a log entry before every delete query (all queries are handled, even those who are sent with $db->query).
+dbhelper then automatically injects the ```updated_by``` column on all insert/update statements and inserts a log entry before every delete query (all queries are handled, even those who are sent with ```$db->query```).
 
-important note: if we manipulate data outside of our web application, the triggers also work, except with accurate values in "updated_by". this is especially true for delete statements (they also work without the manual insert query upfront).
+important note: if we manipulate data outside of our web application, the triggers also work, except with accurate values in ```updated_by```. this is especially true for delete statements (they also work without the manual insert query upfront).
 
 that's it – happy logging.
 
