@@ -10,3 +10,9 @@ function db_delete($table, $conditions) { global $db; return $db->delete($table,
 function db_total_count() { global $db; return $db->total_count(); }
 function db_last_insert_id() { global $db; return $db->last_insert_id(); }
 function db_disconnect() { global $db; return $db->disconnect(); }
+function db_clear($database) { global $db; return $db->clear($database); }
+function db_get_tables() { global $db; return $db->get_tables(); }
+function db_get_columns($table) { global $db; return $db->get_columns($table); }
+function db_has_column($table, $column) { global $db; return $db->has_column($table, $column); }
+function db_get_datatype($table, $column) { global $db; return $db->get_datatype($table, $column); }
+function db_get_primary_key($table) { global $db; return $db->get_primary_key($table); }

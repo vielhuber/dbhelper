@@ -65,6 +65,13 @@ $db->total_count();
 $db->insert('tablename', ['col1' => 'foo']);
 $db->last_insert_id();
 
+/* some more little helpers */
+$db->get_tables() // ['tablename', ...]
+$db->get_columns('tablename') // ['col1', 'col2', ...]
+$db->has_column('tablename', 'col1') // true
+$db->get_datatype('tablename', 'col1') // varchar 
+$db->get_primary_key('tablename') // id
+
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
     ['id' => 1, 'name' => 'foo1'],

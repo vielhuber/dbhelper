@@ -7,16 +7,12 @@ class dbhelper
 {
 
     public $sql = null;
+
     public $config = false;
 
     public function __construct($config = [])
     {
         $this->config = $config;
-    }
-
-    public function enable_auto_inject()
-    {
-        $this->config['auto_inject'] = true;
     }
 
     public function connect($driver, $engine = null, $host = null, $username = null, $password = null, $database = null, $port = 3306)
@@ -500,49 +496,297 @@ class dbhelper
         return $total_count;
     }
 
-    public function debug($query)
+    public function update($table, $data, $condition = null)
     {
-
-        $params = func_get_args();
-        unset($params[0]);
-        $params = array_values($params);
-
-        $keys = [];
-        $values = $params;
-        foreach ($params as $key => $value)
+        if( isset($data[0]) && is_array($data[0]) )
         {
-            // check if named parameters (':param') or anonymous parameters ('?') are used
-            if (is_string($key))
+            return $this->update_batch($table, $data);
+        }
+        $query = "";
+        $query .= "UPDATE ";
+        $query .= "`" . $table . "`";
+        $query .= " SET ";
+        foreach ($data as $key => $value)
+        {
+            $query .= "`" . $key . "`";
+            $query .= " = ";
+            $query .= "?";
+            end($data);
+            if ($key !== key($data))
             {
-                $keys[] = '/:' . $key . '/';
-            }
-            else
-            {
-                $keys[] = '/[?]/';
-            }
-            // bring parameter into human-readable format
-            if (is_string($value))
-            {
-                $values[ $key ] = "'" . $value . "'";
-            }
-            elseif (is_array($value))
-            {
-                $values[ $key ] = implode(',', $value);
-            }
-            elseif (is_null($value))
-            {
-                $values[ $key ] = 'NULL';
+                $query .= ', ';
             }
         }
-        $query = preg_replace($keys, $values, $query, 1, $count);
-        echo '<pre>';
-        print_r($query);
-        echo '</pre>';
-        die();
+        $query .= " WHERE ";
+        foreach ($condition as $key => $value)
+        {
+            $query .= "`" . $key . "`";
+            $query .= " = ";
+            $query .= "? ";
+            end($condition);
+            if ($key !== key($condition))
+            {
+                $query .= ' AND ';
+            }
+        }
+        $args = [];
+        $args[] = $query;
+        foreach ($data as $d)
+        {
+            if ($d === true)
+            {
+                $d = 1;
+            }
+            if ($d === false)
+            {
+                $d = 0;
+            }
+            $args[] = $d;
+        }
+        foreach ($condition as $c)
+        {
+            if ($c === true)
+            {
+                $c = 1;
+            }
+            if ($c === false)
+            {
+                $c = 0;
+            }
+            $args[] = $c;
+        }
+        return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
+    }
+
+    public function delete($table, $conditions)
+    {
+        if( !isset($conditions[0]) && !is_array(array_values($conditions)[0]) )
+        {
+            $conditions = [$conditions];
+        }
+        $query = '';
+        $query .= 'DELETE FROM ';
+        $query .= '`' . $table . '`';
+        $query .= ' WHERE ';
+        $query .= '(';
+        foreach($conditions as $conditions__key=>$conditions__value)
+        {
+            $query .= '(';
+            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
+            {
+                $query .= '`'.$conditions__value__key.'`';
+                $query .= ' = ';
+                $query .= '?';
+                if( array_keys($conditions__value)[count(array_keys($conditions__value))-1] !== $conditions__value__key )
+                {
+                    $query .= ' AND ';
+                }
+            }
+            $query .= ')';
+            if( array_keys($conditions)[count(array_keys($conditions))-1] !== $conditions__key )
+            {
+                $query .= ' OR ';
+            }
+        }
+        $query .= ')';
+        $args = [];
+        $args[] = $query;
+        foreach($conditions as $conditions__key=>$conditions__value)
+        {
+            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
+            {
+                if($conditions__value__value === true)
+                {
+                    $conditions__value__value = 1;
+                }
+                if($conditions__value__value === false)
+                {
+                    $conditions__value__value = 0;
+                }
+                $args[] = $conditions__value__value;
+            }
+        }
+        return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
+    }
+
+    public function clear($database)
+    {
+        $this->query('SET FOREIGN_KEY_CHECKS = 0');        
+        $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $database);
+        if( !empty($tables) )
+        {
+            foreach($tables as $tables__value)
+            {
+                $this->query('DROP TABLE '.$tables__value);
+            }
+        }
+        $this->query('SET FOREIGN_KEY_CHECKS = 1');
+    }
+
+    public function get_tables()
+    {
+        return $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name', $this->sql->database);
+    }
+
+    public function get_columns($table)
+    {
+        return $this->fetch_col('SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ?', $this->sql->database, $table);
+    }
+
+    public function has_column($table, $column)
+    {
+        $count = $this->fetch_var('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?', $this->sql->database, $table, $column);
+        return $count > 0;
+    }
+
+    public function get_datatype($table, $column)
+    {
+        return $this->fetch_var('SELECT data_type FROM information_schema.columns WHERE table_schema = ? AND table_name = ? and column_name = ?', $this->sql->database, $table, $column);
+    }
+
+    public function get_primary_key($table)
+    {
+        try
+        {
+            return ((object)$this->fetch_row('SHOW KEYS FROM `'.$table.'` WHERE Key_name = ?', 'PRIMARY'))->Column_name;
+        }
+        catch(\Exception $e)
+        {
+            return null;
+        }        
+    }
+
+    public function enable_auto_inject()
+    {
+        $this->config['auto_inject'] = true;
+    }
+
+    public function setup_logging()
+    {
+        // create a logging table (if not exists)
+        $this->query('
+            CREATE TABLE IF NOT EXISTS '.$this->config['logging_table'].' (
+              `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `action` varchar(10) NOT NULL,
+              `table` varchar(100) NOT NULL,
+              `key` bigint(20) UNSIGNED NOT NULL,
+              `column` varchar(100) DEFAULT NULL,
+              `value` varchar(1000) DEFAULT NULL,
+              `updated_by` varchar(1000) DEFAULT NULL,
+              `updated_at` datetime(0) DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) NOT NULL,
+              PRIMARY KEY (`id`) USING BTREE
+            )
+        ');
+
+        // append a single column "updated_by" to every table in the database (if not exists)
+        foreach( $this->get_tables() as $table__value )
+        {
+            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
+            {
+                continue;
+            }
+            if( $table__value === $this->config['logging_table'] )
+            {
+                continue;
+            }
+            if( !$this->has_column($table__value, 'updated_by') )
+            {
+                $this->query('ALTER TABLE '.$table__value.' ADD COLUMN updated_by varchar(50)');
+            }
+        }
+
+        // create triggers for all insert/update/delete events (if not exists)
+        foreach( $this->get_tables() as $table__value )
+        {
+
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
+            
+            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
+            {
+                continue;
+            }
+            if( $table__value === $this->config['logging_table'] )
+            {
+                continue;
+            }
+
+            $primary_key = $this->get_primary_key($table__value);
+
+            /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
+
+            $query = '                
+                CREATE TRIGGER `trigger-logging-insert-'.$table__value.'`
+                AFTER INSERT ON '.$table__value.' FOR EACH ROW
+                BEGIN
+                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
+                        if(
+                            $column === $primary_key ||
+                            $column === 'updated_by' ||
+                            strpos($this->get_datatype($table__value, $column),'blob') !== false ||
+                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
+                        ) { return $carry; }
+
+                        $carry .= '
+                            INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                            VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
+                        ';
+                        return $carry;
+                    }).'
+                END
+            ';
+
+            $this->query($query);
+
+            $query = '                
+                CREATE TRIGGER `trigger-logging-update-'.$table__value.'`
+                AFTER UPDATE ON '.$table__value.' FOR EACH ROW
+                BEGIN
+                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
+                        if(
+                            $column === $primary_key ||
+                            $column === 'updated_by' ||
+                            strpos($this->get_datatype($table__value, $column),'blob') !== false ||
+                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
+                        ) { return $carry; }
+                        $carry .= '
+                            IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
+                                INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                                VALUES(\'update\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
+                            END IF;
+                        ';
+                        return $carry;
+                    }).'
+                END
+            ';
+
+            $this->query($query);
+
+            $query = '                
+                CREATE TRIGGER `trigger-logging-delete-'.$table__value.'`
+                AFTER DELETE ON '.$table__value.' FOR EACH ROW
+                BEGIN
+                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE `action` = \'delete\' AND `table` = \''.$table__value.'\' AND `key` = OLD.`'.$primary_key.'` ) ) THEN
+                        INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                        VALUES(\'delete\', \''.$table__value.'\', OLD.`'.$primary_key.'`, NULL, NULL, OLD.updated_by);
+                    END IF;
+                END
+            ';
+
+            $this->query($query);
+
+        }
+
+        // delete old logging entries based on the "delete_older" option
+        if( isset($this->config['delete_older']) && is_numeric($this->config['delete_older']) )
+        {
+            $this->query('DELETE FROM '.$this->config['logging_table'].' WHERE updated_at < ?', date('Y-m-d',strtotime('now - '.$this->config['delete_older'].' months')));
+        }
 
     }
 
-    public function preparse_query($query, $params)
+    private function preparse_query($query, $params)
     {
 
         $return = $query;
@@ -703,120 +947,68 @@ class dbhelper
 
     }
 
-    public function update($table, $data, $condition = null)
+    private function debug($query)
     {
-        if( isset($data[0]) && is_array($data[0]) )
+
+        $params = func_get_args();
+        unset($params[0]);
+        $params = array_values($params);
+
+        $keys = [];
+        $values = $params;
+        foreach ($params as $key => $value)
         {
-            return $this->update_batch($table, $data);
-        }
-        $query = "";
-        $query .= "UPDATE ";
-        $query .= "`" . $table . "`";
-        $query .= " SET ";
-        foreach ($data as $key => $value)
-        {
-            $query .= "`" . $key . "`";
-            $query .= " = ";
-            $query .= "?";
-            end($data);
-            if ($key !== key($data))
+            // check if named parameters (':param') or anonymous parameters ('?') are used
+            if (is_string($key))
             {
-                $query .= ', ';
+                $keys[] = '/:' . $key . '/';
+            }
+            else
+            {
+                $keys[] = '/[?]/';
+            }
+            // bring parameter into human-readable format
+            if (is_string($value))
+            {
+                $values[ $key ] = "'" . $value . "'";
+            }
+            elseif (is_array($value))
+            {
+                $values[ $key ] = implode(',', $value);
+            }
+            elseif (is_null($value))
+            {
+                $values[ $key ] = 'NULL';
             }
         }
-        $query .= " WHERE ";
-        foreach ($condition as $key => $value)
-        {
-            $query .= "`" . $key . "`";
-            $query .= " = ";
-            $query .= "? ";
-            end($condition);
-            if ($key !== key($condition))
-            {
-                $query .= ' AND ';
-            }
-        }
-        $args = [];
-        $args[] = $query;
-        foreach ($data as $d)
-        {
-            if ($d === true)
-            {
-                $d = 1;
-            }
-            if ($d === false)
-            {
-                $d = 0;
-            }
-            $args[] = $d;
-        }
-        foreach ($condition as $c)
-        {
-            if ($c === true)
-            {
-                $c = 1;
-            }
-            if ($c === false)
-            {
-                $c = 0;
-            }
-            $args[] = $c;
-        }
-        return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
+        $query = preg_replace($keys, $values, $query, 1, $count);
+        echo '<pre>';
+        print_r($query);
+        echo '</pre>';
+        die();
+
     }
 
-    public function delete($table, $conditions)
+    private function find_occurences($haystack, $needle)
     {
-        if( !isset($conditions[0]) && !is_array(array_values($conditions)[0]) )
+        $positions = [];
+        $pos_last = 0;
+        while( ($pos_last = strpos($haystack, $needle, $pos_last)) !== false )
         {
-            $conditions = [$conditions];
+            $positions[] = $pos_last;
+            $pos_last = $pos_last + strlen($needle);
         }
-        $query = '';
-        $query .= 'DELETE FROM ';
-        $query .= '`' . $table . '`';
-        $query .= ' WHERE ';
-        $query .= '(';
-        foreach($conditions as $conditions__key=>$conditions__value)
-        {
-            $query .= '(';
-            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
-            {
-                $query .= '`'.$conditions__value__key.'`';
-                $query .= ' = ';
-                $query .= '?';
-                if( array_keys($conditions__value)[count(array_keys($conditions__value))-1] !== $conditions__value__key )
-                {
-                    $query .= ' AND ';
-                }
-            }
-            $query .= ')';
-            if( array_keys($conditions)[count(array_keys($conditions))-1] !== $conditions__key )
-            {
-                $query .= ' OR ';
-            }
-        }
-        $query .= ')';
-        $args = [];
-        $args[] = $query;
-        foreach($conditions as $conditions__key=>$conditions__value)
-        {
-            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
-            {
-                if($conditions__value__value === true)
-                {
-                    $conditions__value__value = 1;
-                }
-                if($conditions__value__value === false)
-                {
-                    $conditions__value__value = 0;
-                }
-                $args[] = $conditions__value__value;
-            }
-        }
-        return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
+        return $positions;
     }
 
-    public function update_batch($table, $input)
+    private function find_nth_occurence($haystack, $needle, $index)
+    {
+        $positions = $this->find_occurences($haystack, $needle);
+        if(empty($positions) || $index > (count($positions)-1)) { return null; }
+        return $positions[$index];
+    }
+
+    private function update_batch($table, $input)
     {
         $query = '';
         $args = [];
@@ -858,191 +1050,7 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args);
     }
 
-    public function clear($database)
-    {
-        $this->query('SET FOREIGN_KEY_CHECKS = 0');        
-        $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $database);
-        if( !empty($tables) )
-        {
-            foreach($tables as $tables__value)
-            {
-                $this->query('DROP TABLE '.$tables__value);
-            }
-        }
-        $this->query('SET FOREIGN_KEY_CHECKS = 1');
-    }
-
-    public function find_occurences($haystack, $needle)
-    {
-        $positions = [];
-        $pos_last = 0;
-        while( ($pos_last = strpos($haystack, $needle, $pos_last)) !== false )
-        {
-            $positions[] = $pos_last;
-            $pos_last = $pos_last + strlen($needle);
-        }
-        return $positions;
-    }
-
-    public function find_nth_occurence($haystack, $needle, $index)
-    {
-        $positions = $this->find_occurences($haystack, $needle);
-        if(empty($positions) || $index > (count($positions)-1)) { return null; }
-        return $positions[$index];
-    }
-
-    public function setup_logging()
-    {
-        // create a logging table (if not exists)
-        $this->query('
-            CREATE TABLE IF NOT EXISTS '.$this->config['logging_table'].' (
-              `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-              `action` varchar(10) NOT NULL,
-              `table` varchar(100) NOT NULL,
-              `key` bigint(20) UNSIGNED NOT NULL,
-              `column` varchar(100) DEFAULT NULL,
-              `value` varchar(1000) DEFAULT NULL,
-              `updated_by` varchar(1000) DEFAULT NULL,
-              `updated_at` datetime(0) DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) NOT NULL,
-              PRIMARY KEY (`id`) USING BTREE
-            )
-        ');
-
-        // append a single column "updated_by" to every table in the database (if not exists)
-        foreach( $this->get_tables() as $table__value )
-        {
-            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
-            {
-                continue;
-            }
-            if( $table__value === $this->config['logging_table'] )
-            {
-                continue;
-            }
-            if( !$this->table_has_column($table__value, 'updated_by') )
-            {
-                $this->query('ALTER TABLE '.$table__value.' ADD COLUMN updated_by varchar(50)');
-            }
-        }
-
-        // create triggers for all insert/update/delete events (if not exists)
-        foreach( $this->get_tables() as $table__value )
-        {
-
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
-            
-            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
-            {
-                continue;
-            }
-            if( $table__value === $this->config['logging_table'] )
-            {
-                continue;
-            }
-
-            $primary_key = $this->get_primary_key($table__value);
-
-            /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
-
-            $query = '                
-                CREATE TRIGGER `trigger-logging-insert-'.$table__value.'`
-                AFTER INSERT ON '.$table__value.' FOR EACH ROW
-                BEGIN
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if(
-                            $column === $primary_key ||
-                            $column === 'updated_by' ||
-                            strpos($this->get_datatype($table__value, $column),'blob') !== false ||
-                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
-                        ) { return $carry; }
-
-                        $carry .= '
-                            INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
-                            VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
-                        ';
-                        return $carry;
-                    }).'
-                END
-            ';
-
-            $this->query($query);
-
-            $query = '                
-                CREATE TRIGGER `trigger-logging-update-'.$table__value.'`
-                AFTER UPDATE ON '.$table__value.' FOR EACH ROW
-                BEGIN
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if(
-                            $column === $primary_key ||
-                            $column === 'updated_by' ||
-                            strpos($this->get_datatype($table__value, $column),'blob') !== false ||
-                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
-                        ) { return $carry; }
-                        $carry .= '
-                            IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
-                                INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
-                                VALUES(\'update\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
-                            END IF;
-                        ';
-                        return $carry;
-                    }).'
-                END
-            ';
-
-            $this->query($query);
-
-            $query = '                
-                CREATE TRIGGER `trigger-logging-delete-'.$table__value.'`
-                AFTER DELETE ON '.$table__value.' FOR EACH ROW
-                BEGIN
-                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE `action` = \'delete\' AND `table` = \''.$table__value.'\' AND `key` = OLD.`'.$primary_key.'` ) ) THEN
-                        INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
-                        VALUES(\'delete\', \''.$table__value.'\', OLD.`'.$primary_key.'`, NULL, NULL, OLD.updated_by);
-                    END IF;
-                END
-            ';
-
-            $this->query($query);
-
-        }
-
-        // delete old logging entries based on the "delete_older" option
-        if( isset($this->config['delete_older']) && is_numeric($this->config['delete_older']) )
-        {
-            $this->query('DELETE FROM '.$this->config['logging_table'].' WHERE updated_at < ?', date('Y-m-d',strtotime('now - '.$this->config['delete_older'].' months')));
-        }
-
-    }
-
-    public function get_tables()
-    {
-        return $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name', $this->sql->database);
-    }
-
-    public function get_columns($table)
-    {
-        return $this->fetch_col('SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ?', $this->sql->database, $table);
-    }
-
-    public function table_has_column($table, $column)
-    {
-        $count = $this->fetch_var('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?', $this->sql->database, $table, $column);
-        return $count > 0;
-    }
-
-    public function get_datatype($table, $column)
-    {
-        return $this->fetch_var('SELECT data_type FROM information_schema.columns WHERE table_schema = ? AND table_name = ? and column_name = ?', $this->sql->database, $table, $column);
-    }
-
-    public function get_primary_key($table)
-    {
-        return ((object)$this->fetch_row('SHOW KEYS FROM `'.$table.'` WHERE Key_name = ?', 'PRIMARY'))->Column_name;
-    }
-
-    public function handle_logging($query, $params)
+    private function handle_logging($query, $params)
     {
         $table = $this->get_table_name_from_query($query);
 
@@ -1066,9 +1074,7 @@ class dbhelper
             {
                 return $query;
             }
-            //echo PHP_EOL.$query.PHP_EOL;
             $query = substr($query, 0, $pos1) . ',updated_by' . substr($query, $pos1, $pos2-$pos1) . ',\''.$this->config['updated_by'].'\'' . substr($query, $pos2);
-            //echo PHP_EOL.$query.PHP_EOL;
         }
 
         else if( stripos($query, 'UPDATE') === 0 )
@@ -1076,9 +1082,7 @@ class dbhelper
             $pos1 = stripos($query,'SET')+strlen('SET');
             if( $pos1 !== false && strpos(substr($query, $pos1),'updated_by') === false )
             {
-                //echo PHP_EOL.$query.PHP_EOL;
                 $query = substr($query, 0, $pos1) . ' updated_by = \''.$this->config['updated_by'].'\', ' . substr($query, $pos1);
-                //echo PHP_EOL.$query.PHP_EOL;
             }
         }
 
@@ -1096,7 +1100,7 @@ class dbhelper
 
     }
 
-    public function get_table_name_from_query($query)
+    private function get_table_name_from_query($query)
     {
         $table = '';
 

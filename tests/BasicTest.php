@@ -177,6 +177,34 @@ class BasicTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($id, $this->db->last_insert_id());
     }
 
+    function test__get_tables()
+    {
+        $this->assertSame( $this->db->get_tables(), ['test'] );
+    }
+
+    function test__get_columns()
+    {
+        $this->assertSame( $this->db->get_columns('test'), ['id', 'col1', 'col2', 'col3'] );
+    }
+
+    function test__has_column()
+    {
+        $this->assertSame( $this->db->has_column('test', 'col1'), true );
+        $this->assertSame( $this->db->has_column('test', 'col0'), false );
+    }
+
+    function test__get_datatype()
+    {
+        $this->assertSame( $this->db->get_datatype('test', 'col1'), 'varchar' );
+        $this->assertSame( $this->db->get_datatype('test', 'col0'), null );
+    }
+
+    function test__get_primary_key()
+    {
+        $this->assertSame( $this->db->get_primary_key('test'), 'id' );
+        $this->assertSame( $this->db->get_primary_key('test0'), null );
+    }
+
     function test__errors()
     {
         try
