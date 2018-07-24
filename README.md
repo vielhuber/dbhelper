@@ -120,7 +120,7 @@ $db->setup_logging();
 - it creates a logging table (if not exists)
 - it appends a single column ```updated_by``` to every table in the database (if not exists)
 - it creates triggers for all insert/update/delete events (if not exists)
-- it deletes old logging entries based on the "delete_older" option
+- it deletes old logging entries based on the ```delete_older``` option
 
 you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. note that blob columns are automatically excluded.
 
