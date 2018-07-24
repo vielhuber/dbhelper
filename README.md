@@ -97,7 +97,10 @@ dbhelper can support setting up a mature logging system.
 ```php
 $db = new dbhelper([
     'logging_table' => 'logs',
-    'exclude_tables' => [],
+    'exclude' => [
+        'tables' => ['table1'],
+        'columns' => ['table2' => ['col1','col2','col3']]
+    ],
     'delete_older' => 12, // months
     'updated_by' => get_current_user_id()
 ]);

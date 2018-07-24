@@ -911,7 +911,7 @@ class dbhelper
         // append a single column "updated_by" to every table in the database (if not exists)
         foreach( $this->get_tables() as $table__value )
         {
-            if( isset($this->config['exclude_tables']) && in_array($table__value, $this->config['exclude_tables']) )
+            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
             {
                 continue;
             }
@@ -928,7 +928,12 @@ class dbhelper
         // create triggers for all insert/update/delete events (if not exists)
         foreach( $this->get_tables() as $table__value )
         {
-            if( isset($this->config['exclude_tables']) && in_array($table__value, $this->config['exclude_tables']) )
+
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
+            
+            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
             {
                 continue;
             }
@@ -938,12 +943,6 @@ class dbhelper
             }
 
             $primary_key = $this->get_primary_key($table__value);
-
-            // for these special statements we have do use directly exec, not prepare
-
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
-            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
 
             /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
 
@@ -955,8 +954,10 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
-                            strpos($this->get_datatype($table__value, $column),'blob') !== false
+                            strpos($this->get_datatype($table__value, $column),'blob') !== false ||
+                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
+
                         $carry .= '
                             INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
                             VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
@@ -976,7 +977,8 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
-                            strpos($this->get_datatype($table__value, $column),'blob') !== false
+                            strpos($this->get_datatype($table__value, $column),'blob') !== false ||
+                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '
                             IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
@@ -1044,7 +1046,11 @@ class dbhelper
     {
         $table = $this->get_table_name_from_query($query);
 
-        if( isset($this->config['exclude_tables']) && in_array($table, $this->config['exclude_tables']) )
+        if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table, $this->config['exclude']['tables']) )
+        {
+            return $query;
+        }
+        if( $table === $this->config['logging_table'] )
         {
             return $query;
         }
