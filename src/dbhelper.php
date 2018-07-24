@@ -336,8 +336,15 @@ class dbhelper
         {
 
             case 'pdo':
-                $stmt = $this->sql->prepare($query);
-                $stmt->execute($params);
+                if( !empty($params) )
+                {
+                    $stmt = $this->sql->prepare($query);
+                    $stmt->execute($params);
+                }
+                else
+                {
+                    $stmt->exec($query);
+                }
                 if ($stmt->errorCode() != 0)
                 {
                     $errors = $stmt->errorInfo();
