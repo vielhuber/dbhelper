@@ -926,11 +926,14 @@ class dbhelper
         {
             foreach($params as $params__key=>$params__value)
             {
-                // replace first occurence
-                $directive = '%s';
-                if( is_int($params__value) || ctype_digit((string)$params__value) ) { $directive = '%d'; }
-                else if( is_float($params__value) ) { $directive = '%f'; }                
-                $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
+                // replace next occurence
+                if( strpos($return, '?') !== false )
+                {
+                    $directive = '%s';
+                    if( is_int($params__value) || ctype_digit((string)$params__value) ) { $directive = '%d'; }
+                    else if( is_float($params__value) ) { $directive = '%f'; }                
+                    $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
+                }
             }
         }
         
@@ -1090,9 +1093,12 @@ class dbhelper
         {
             // fetch all ids that are affected
             $ids = $this->fetch_col('SELECT '.$this->get_primary_key($table).' '.substr($query, stripos($query,'FROM')), $params);
-            foreach($ids as $id)
+            if( !empty($ids) )
             {
-                $this->insert('logs', ['log_action' => 'delete', 'log_table' => $table, 'log_key' => $id, 'updated_by' => $this->config['updated_by']]);
+                foreach($ids as $id)
+                {
+                    $this->insert('logs', ['log_action' => 'delete', 'log_table' => $table, 'log_key' => $id, 'updated_by' => $this->config['updated_by']]);
+                }
             }
         }
 
