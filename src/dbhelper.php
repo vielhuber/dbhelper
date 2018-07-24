@@ -945,7 +945,11 @@ class dbhelper
                 AFTER INSERT ON '.$table__value.' FOR EACH ROW
                 BEGIN
                     '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if( $column === $primary_key || $column === 'updated_by' ) { return $carry; }
+                        if(
+                            $column === $primary_key ||
+                            $column === 'updated_by' ||
+                            strpos($this->get_datatype($table__value, $column),'blob') !== false
+                        ) { return $carry; }
                         $carry .= '
                             INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
                             VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
@@ -962,7 +966,11 @@ class dbhelper
                 AFTER UPDATE ON '.$table__value.' FOR EACH ROW
                 BEGIN
                     '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if( $column === $primary_key || $column === 'updated_by' ) { return $carry; }
+                        if(
+                            $column === $primary_key ||
+                            $column === 'updated_by' ||
+                            strpos($this->get_datatype($table__value, $column),'blob') !== false
+                        ) { return $carry; }
                         $carry .= '
                             IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
                                 INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
@@ -1013,6 +1021,11 @@ class dbhelper
     {
         $count = $this->fetch_var('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?', $this->sql->database, $table, $column);
         return $count > 0;
+    }
+
+    public function get_datatype($table, $column)
+    {
+        return $this->fetch_var('SELECT data_type FROM information_schema.columns WHERE table_schema = ? AND table_name = ? and column_name = ?', $this->sql->database, $table, $column);
     }
 
     public function get_primary_key($table)

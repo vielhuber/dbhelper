@@ -1,7 +1,7 @@
 <?php
 use vielhuber\dbhelper\dbhelper;
 
-class Test extends \PHPUnit\Framework\TestCase
+class BasicTest extends \PHPUnit\Framework\TestCase
 {
 
     protected $db;

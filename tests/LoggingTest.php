@@ -1,7 +1,7 @@
 <?php
 use vielhuber\dbhelper\dbhelper;
 
-class Test extends \PHPUnit\Framework\TestCase
+class LoggingTest extends \PHPUnit\Framework\TestCase
 {
 
     protected $db;
@@ -23,7 +23,8 @@ class Test extends \PHPUnit\Framework\TestCase
               id int(255) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
               col1 varchar(255),
               col2 varchar(255),
-              col3 varchar(255)
+              col3 varchar(255),
+              col4 blob
             )
         ');
         $this->db->query('
@@ -32,7 +33,8 @@ class Test extends \PHPUnit\Framework\TestCase
               id int(255) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
               col1 varchar(255),
               col2 varchar(255),
-              col3 varchar(255)
+              col3 varchar(255),
+              col4 blob
             )
         ');
         $this->db->setup_logging();
@@ -48,29 +50,34 @@ class Test extends \PHPUnit\Framework\TestCase
     function test__insert()
     {
         $id = $this->db->insert('test', ['col1' => 'foo1']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'updated_by' => 42]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
         $this->assertEquals($row, ['action' => 'insert', 'table' => 'test', 'column' => 'col3', 'value' => null, 'updated_by' => 42]);
 
         $id = $this->db->insert('test', ['col1' => 'foo2', 'updated_by' => 43]);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo2', 'col2' => null, 'col3' => null, 'updated_by' => 43]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo2', 'col2' => null, 'col3' => null, 'col4' => null, 'updated_by' => 43]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
         $this->assertEquals($row, ['action' => 'insert', 'table' => 'test', 'column' => 'col3', 'value' => null, 'updated_by' => 43]);
 
         $this->db->query('INSERT INTO test(col1, col2, col3) VALUES(?,?,?)', ['foo3','foo3','foo3']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
         $this->assertEquals($row, ['action' => 'insert', 'table' => 'test', 'column' => 'col3', 'value' => 'foo3', 'updated_by' => 42]);
 
         $this->db->query('insert into test (`col1`, `col2`, `col3`) VALUES (?, ?, ?)', ['foo3','foo3','foo3']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
         $this->assertEquals($row, ['action' => 'insert', 'table' => 'test', 'column' => 'col3', 'value' => 'foo3', 'updated_by' => 42]);
 
         $id = $this->db->insert('test2', ['col1' => 'foo1']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test2 WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test2 WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
         $this->assertEquals($row, ['action' => 'insert', 'table' => 'test', 'column' => 'col3', 'value' => 'foo3', 'updated_by' => 42]);
+
+        $id = $this->db->insert('test', ['col1' => 'foo1']);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null, 'updated_by' => 42]);
+        $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
+        $this->assertEquals($row, ['action' => 'insert', 'table' => 'test', 'column' => 'col3', 'value' => null, 'updated_by' => 42]);
     }
 
     function test__update()
@@ -88,7 +95,7 @@ class Test extends \PHPUnit\Framework\TestCase
         $this->assertEquals($row, ['action' => 'update', 'table' => 'test', 'column' => 'col1', 'value' => 'foo', 'updated_by' => 43]);
 
         $this->db->query('UPDATE test SET col1 = ?, col2 = ?, col3 = ?', ['foo3','foo3','foo3']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => $id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => $id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['key']); unset($row['updated_at']);
         $this->assertEquals($row, ['action' => 'update', 'table' => 'test', 'column' => 'col3', 'value' => 'foo3', 'updated_by' => 42]);
     }
