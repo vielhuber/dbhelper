@@ -131,7 +131,7 @@ $db->insert('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()
 
 $db->update('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()], ['id' => 42]);
 
-$db->insert('logs', ['action' => 'delete', 'table' => 'tablename', 'key' => 42, 'updated_by' => get_current_user_id()]);
+$db->insert('logs', ['log_action' => 'delete', 'log_table' => 'tablename', 'log_key' => 42, 'updated_by' => get_current_user_id()]);
 $db->delete('tablename', ['id' => 42]);
 ```
 

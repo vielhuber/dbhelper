@@ -667,11 +667,11 @@ class dbhelper
         $this->query('
             CREATE TABLE IF NOT EXISTS '.$this->config['logging_table'].' (
               `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-              `action` varchar(10) NOT NULL,
-              `table` varchar(100) NOT NULL,
-              `key` bigint(20) UNSIGNED NOT NULL,
-              `column` varchar(100) DEFAULT NULL,
-              `value` varchar(1000) DEFAULT NULL,
+              `log_action` varchar(10) NOT NULL,
+              `log_table` varchar(100) NOT NULL,
+              `log_key` bigint(20) UNSIGNED NOT NULL,
+              `log_column` varchar(100) DEFAULT NULL,
+              `log_value` varchar(1000) DEFAULT NULL,
               `updated_by` varchar(1000) DEFAULT NULL,
               `updated_at` datetime(0) DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) NOT NULL,
               PRIMARY KEY (`id`) USING BTREE
@@ -729,7 +729,7 @@ class dbhelper
                         ) { return $carry; }
 
                         $carry .= '
-                            INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                            INSERT INTO '.$this->config['logging_table'].'(`log_action`,`log_table`,`log_key`,`log_column`,`log_value`,`updated_by`)
                             VALUES(\'insert\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
                         ';
                         return $carry;
@@ -752,7 +752,7 @@ class dbhelper
                         ) { return $carry; }
                         $carry .= '
                             IF (OLD.`'.$column.'` <> NEW.`'.$column.'`) OR (OLD.`'.$column.'` IS NULL AND NEW.`'.$column.'` IS NOT NULL) OR (OLD.`'.$column.'` IS NOT NULL AND NEW.`'.$column.'` IS NULL) THEN
-                                INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                                INSERT INTO '.$this->config['logging_table'].'(`log_action`,`log_table`,`log_key`,`log_column`,`log_value`,`updated_by`)
                                 VALUES(\'update\', \''.$table__value.'\', NEW.`'.$primary_key.'`, \''.$column.'\', NEW.`'.$column.'`, NEW.updated_by);
                             END IF;
                         ';
@@ -767,8 +767,8 @@ class dbhelper
                 CREATE TRIGGER `trigger-logging-delete-'.$table__value.'`
                 AFTER DELETE ON '.$table__value.' FOR EACH ROW
                 BEGIN
-                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE `action` = \'delete\' AND `table` = \''.$table__value.'\' AND `key` = OLD.`'.$primary_key.'` ) ) THEN
-                        INSERT INTO '.$this->config['logging_table'].'(`action`,`table`,`key`,`column`,`value`,`updated_by`)
+                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE `log_action` = \'delete\' AND `log_table` = \''.$table__value.'\' AND `log_key` = OLD.`'.$primary_key.'` ) ) THEN
+                        INSERT INTO '.$this->config['logging_table'].'(`log_action`,`log_table`,`log_key`,`log_column`,`log_value`,`updated_by`)
                         VALUES(\'delete\', \''.$table__value.'\', OLD.`'.$primary_key.'`, NULL, NULL, OLD.updated_by);
                     END IF;
                 END
@@ -1092,7 +1092,7 @@ class dbhelper
             $ids = $this->fetch_col('SELECT '.$this->get_primary_key($table).' '.substr($query, stripos($query,'FROM')), $params);
             foreach($ids as $id)
             {
-                $this->insert('logs', ['action' => 'delete', 'table' => $table, 'key' => $id, 'updated_by' => $this->config['updated_by']]);
+                $this->insert('logs', ['log_action' => 'delete', 'log_table' => $table, 'log_key' => $id, 'updated_by' => $this->config['updated_by']]);
             }
         }
 
