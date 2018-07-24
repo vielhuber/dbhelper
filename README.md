@@ -58,8 +58,8 @@ $db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM tablename WHERE ID = ?', 1);
 
 /* total count without limit */
-$db->fetch_all('SELECT * FROM tablename LIMIT 10');
-$db->total_count();
+$db->fetch_all('SELECT SQL_CALC_FOUND_ROWS * FROM tablename LIMIT 10');
+$db->found_rows();
 
 /* last insert id */
 $db->insert('tablename', ['col1' => 'foo']);

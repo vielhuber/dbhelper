@@ -25,7 +25,7 @@ class dbhelper
                     $sql = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $database, $username, $password, [
                         PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
                         PDO::ATTR_EMULATE_PREPARES => false,
-                        PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
                     ]);
                 }
                 if ($engine == 'postgres')
@@ -332,21 +332,25 @@ class dbhelper
         {
 
             case 'pdo':
-                if( !empty($params) )
+                // in general we use prepare/execute instead of exec or query
+                // this works certainly in all cases, EXCEPT when doing something like CREATE TABLE, CREATE TRIGGER, DROP TABLE, DROP TRIGGER
+                // that causes the error "Cannot execute queries while other unbuffered queries are active"
+                // therefore we switch in those cases to exec
+                if( stripos($query,'CREATE') === 0 || stripos($query,'DROP') === 0 )
+                {
+                    $this->sql->exec($query);
+                }
+                else
                 {
                     $stmt = $this->sql->prepare($query);
-                    $stmt->execute($params);
+                    $stmt->execute($params);                
                     if ($stmt->errorCode() != 0)
                     {
                         $errors = $stmt->errorInfo();
                         throw new \Exception($errors[2]);
                     }
-                    return $stmt->rowCount();
-                }
-                else
-                {
-                    $this->sql->exec($query);
-                }
+                    return $stmt->rowCount();    
+                }           
                 break;
 
             case 'mysqli':
@@ -469,22 +473,22 @@ class dbhelper
         return $last_insert_id;
     }
 
-    public function total_count()
+    public function found_rows()
     {
-        $total_count = 0;
+        $found_rows = 0;
         switch ($this->sql->driver)
         {
 
             case 'pdo':
-                $total_count = $this->fetch_var("SELECT FOUND_ROWS();");
+                $found_rows = $this->fetch_var("SELECT FOUND_ROWS();");
                 break;
 
             case 'mysqli':
-                $total_count = $this->fetch_var("SELECT FOUND_ROWS();");
+                $found_rows = $this->fetch_var("SELECT FOUND_ROWS();");
                 break;
 
             case 'wordpress':
-                $total_count = $this->fetch_var("SELECT FOUND_ROWS();");
+                $found_rows = $this->fetch_var("SELECT FOUND_ROWS();");
                 break;
 
             case 'joomla':
@@ -493,7 +497,7 @@ class dbhelper
 
         }
 
-        return $total_count;
+        return $found_rows;
     }
 
     public function update($table, $data, $condition = null)

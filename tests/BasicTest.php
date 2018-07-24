@@ -164,11 +164,15 @@ class BasicTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($this->db->fetch_all('SELECT * FROM test'), []);
     }
 
-    function test__total_count()
+    function test__found_rows()
     {
-        $this->assertSame($this->db->total_count(), 0);
         $id = $this->db->insert('test', ['col1' => 'foo']);
-        $this->assertSame($this->db->total_count(), 1);
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $id = $this->db->insert('test', ['col1' => 'foo']);
+        $this->db->query('SELECT SQL_CALC_FOUND_ROWS * FROM test LIMIT 3;');
+        $this->assertSame($this->db->found_rows(), 5);
     }
 
     function test__last_insert_id()

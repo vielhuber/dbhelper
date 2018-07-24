@@ -69,15 +69,18 @@ class LoggingTest extends \PHPUnit\Framework\TestCase
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['updated_at']);
         $this->assertEquals($row, ['log_action' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo3', 'updated_by' => 42]);
 
-        $this->db->query('insert into test (`col1`, `col2`, `col3`) VALUES (?, ?, ?)', ['foo3','foo3','foo3']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'col4' => null, 'col5' => null, 'updated_by' => 42]);
+        $this->db->query('
+            insert into
+            test (`col1`, `col2`, `col3`) VALUES (?, ?, ?)
+        ', ['foo4','foo4','foo4']);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo4', 'col2' => 'foo4', 'col3' => 'foo4', 'col4' => null, 'col5' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['updated_at']);
-        $this->assertEquals($row, ['log_action' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($row, ['log_action' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo4', 'updated_by' => 42]);
 
         $id = $this->db->insert('test2', ['col1' => 'foo1']);
         $this->assertEquals($this->db->fetch_row('SELECT * FROM test2 WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null, 'col5' => null]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['updated_at']);
-        $this->assertEquals($row, ['log_action' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($row, ['log_action' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo4', 'updated_by' => 42]);
 
         $id = $this->db->insert('test', ['col1' => 'foo1']);
         $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null, 'col5' => null, 'updated_by' => 42]);
