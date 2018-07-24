@@ -340,17 +340,17 @@ class dbhelper
                 {
                     $stmt = $this->sql->prepare($query);
                     $stmt->execute($params);
+                    if ($stmt->errorCode() != 0)
+                    {
+                        $errors = $stmt->errorInfo();
+                        throw new \Exception($errors[2]);
+                    }
+                    return $stmt->rowCount();
                 }
                 else
                 {
-                    $stmt->exec($query);
+                    $this->sql->exec($query);
                 }
-                if ($stmt->errorCode() != 0)
-                {
-                    $errors = $stmt->errorInfo();
-                    throw new \Exception($errors[2]);
-                }
-                return $stmt->rowCount();
                 break;
 
             case 'mysqli':
@@ -941,9 +941,9 @@ class dbhelper
 
             // for these special statements we have do use directly exec, not prepare
 
-            $this->sql->exec('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
-            $this->sql->exec('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
-            $this->sql->exec('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-insert-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-update-'.$table__value.'`');
+            $this->query('DROP TRIGGER IF EXISTS `trigger-logging-delete-'.$table__value.'`');
 
             /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
 
@@ -966,7 +966,7 @@ class dbhelper
                 END
             ';
 
-            $this->sql->exec($query);
+            $this->query($query);
 
             $query = '                
                 CREATE TRIGGER `trigger-logging-update-'.$table__value.'`
@@ -989,7 +989,7 @@ class dbhelper
                 END
             ';
 
-            $this->sql->exec($query);
+            $this->query($query);
 
             $query = '                
                 CREATE TRIGGER `trigger-logging-delete-'.$table__value.'`
@@ -1002,7 +1002,7 @@ class dbhelper
                 END
             ';
 
-            $this->sql->exec($query);
+            $this->query($query);
 
         }
 
