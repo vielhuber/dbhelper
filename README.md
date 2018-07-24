@@ -124,6 +124,18 @@ setup_logging() does four things:
 
 you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. note that blob columns are automatically excluded.
 
+the logging table has the following schema:
+
+- ```id```
+- ```log_event```: insert/update/delete
+- ```log_table```: name of the table of the modified row
+- ```log_key```: key of the modified row
+- ```log_column```: column of the modified row
+- ```log_value```: value of the modified row
+- ```log_uuid```: unique identifier of this action
+- ```updated_by```: who did make that change
+- ```updated_at```: date and time of the event
+
 we now have to adjust our queries. "updated_by" must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
 
 ```php
@@ -131,7 +143,7 @@ $db->insert('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()
 
 $db->update('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()], ['id' => 42]);
 
-$db->insert('logs', ['log_action' => 'delete', 'log_table' => 'tablename', 'log_key' => 42, 'updated_by' => get_current_user_id()]);
+$db->insert('logs', ['log_event' => 'delete', 'log_table' => 'tablename', 'log_key' => 42, 'updated_by' => get_current_user_id()]);
 $db->delete('tablename', ['id' => 42]);
 ```
 
