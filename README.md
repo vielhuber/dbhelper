@@ -1,6 +1,6 @@
 # 🍗 dbhelper 🍗
 
-dbhelper is a small php wrapper for mysql/pgsql databases.
+dbhelper is a small php wrapper for mysql/postgres databases.
 
 ## installation
 
@@ -9,7 +9,7 @@ install once with composer:
 composer require vielhuber/dbhelper
 ```
 
-then add this to your files:
+then add this to your project:
 ```php
 require __DIR__.'/vendor/autoload.php';
 use vielhuber\dbhelper\dbhelper;
@@ -38,7 +38,7 @@ $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 /* automatic flattened arguments */
 $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,5,6]);
-    // gets transformed to
+// gets transformed to
 $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 
 /* automatic in-expansion */
@@ -46,7 +46,7 @@ $db->fetch_all('SELECT * FROM tablename WHERE col1 = ? AND col2 IN (?)', 1, [2,3
 
 /* support for null values */
 $db->query('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
-    // gets transformed to
+// gets transformed to
 $db->query('UPDATE tablename SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
 /* delete all tables (without dropping the whole database) */
@@ -169,11 +169,11 @@ $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 ### return values
 
-as return values dbhelper usually returns associative arrays. if you use it with wordpress, objects are returned.
+as return values dbhelper usually returns associative arrays. if you use it with wordpress, objects are returned. dbhelper throws exceptions on all occured errors.
 
 ### static version
 
-here is also a static version with static function calls (if you only use a single instance of dbhelper):
+here is also a static version with static function calls (makes sense, if you use a single instance of dbhelper):
 ```php
 require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
 db_fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
