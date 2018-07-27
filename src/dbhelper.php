@@ -435,11 +435,12 @@ class dbhelper
         $ret = call_user_func_array([$this, 'query'], $args);
 
         // mysql returns the last inserted id inside the current session, obviously ignoring triggers
+        // on postgres we cannot use LASTVAL(), because it returns the last id of possibly inserted rows caused by triggers
+        // see: https://stackoverflow.com/questions/51558021/mysql-postgres-last-insert-id-lastval-different-behaviour
         if( $this->sql->engine === 'mysql' )
         {
             return $this->last_insert_id();
         }
-        // on postgres we cannot use LASTVAL(), because it returns the last id of possibly inserted rows caused by triggers
         if( $this->sql->engine === 'postgres' )
         {
             return $this->last_insert_id($table, $this->get_primary_key($table));
@@ -824,6 +825,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
+                            $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
 
@@ -848,6 +850,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
+                            $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '
@@ -913,6 +916,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
+                            $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
 
@@ -946,6 +950,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
+                            $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '
