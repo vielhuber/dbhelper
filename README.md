@@ -20,7 +20,8 @@ $db = new dbhelper();
 
 ```php
 /* connect to database */
-$db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'database', 3306);
+$db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
+$db->connect('pdo', 'postgres', '127.0.0.1', 'username', 'password', 'database', 3306);
 
 /* disconnect from database */
 $db->disconnect();
@@ -56,10 +57,6 @@ $db->clear('database');
 $id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
 $db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM tablename WHERE ID = ?', 1);
-
-/* total count without limit */
-$db->fetch_all('SELECT SQL_CALC_FOUND_ROWS * FROM tablename LIMIT 10');
-$db->found_rows();
 
 /* last insert id */
 $db->insert('tablename', ['col1' => 'foo']);
@@ -111,7 +108,7 @@ $db = new dbhelper([
     'delete_older' => 12, // months
     'updated_by' => get_current_user_id()
 ]);
-
+$db->connect('...');
 $db->setup_logging();
 ```
 
@@ -122,7 +119,7 @@ $db->setup_logging();
 - it creates triggers for all insert/update/delete events (if not exists)
 - it deletes old logging entries based on the ```delete_older``` option
 
-you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. note that blob columns are automatically excluded.
+you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. it is recommened to exclude blob/bytea columns.
 
 the logging table has the following schema:
 

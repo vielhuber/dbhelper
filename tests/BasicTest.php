@@ -1,32 +1,10 @@
 <?php
+namespace Tests;
+
 use vielhuber\dbhelper\dbhelper;
 
-class BasicTest extends \PHPUnit\Framework\TestCase
+trait BasicTest
 {
-
-    protected $db;
-
-    protected function setUp()
-    {
-        $this->db = new dbhelper();
-        $this->db->connect('pdo', 'mysql', '127.0.0.1', 'root', 'root', 'dbhelper', 3306);
-        $this->db->clear('dbhelper');
-        $this->db->query('
-            CREATE TABLE test
-            (
-              id int(255) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-              col1 varchar(255),
-              col2 varchar(255),
-              col3 varchar(255)
-            )
-        ');
-    }
-
-    protected function tearDown()
-    {
-        $this->db->clear('dbhelper');
-        $this->db->disconnect();
-    }
 
     function test__insert()
     {
@@ -164,17 +142,6 @@ class BasicTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($this->db->fetch_all('SELECT * FROM test'), []);
     }
 
-    function test__found_rows()
-    {
-        $id = $this->db->insert('test', ['col1' => 'foo']);
-        $id = $this->db->insert('test', ['col1' => 'foo']);
-        $id = $this->db->insert('test', ['col1' => 'foo']);
-        $id = $this->db->insert('test', ['col1' => 'foo']);
-        $id = $this->db->insert('test', ['col1' => 'foo']);
-        $this->db->query('SELECT SQL_CALC_FOUND_ROWS * FROM test LIMIT 3;');
-        $this->assertSame($this->db->found_rows(), 5);
-    }
-
     function test__last_insert_id()
     {
         $id = $this->db->insert('test', ['col1' => 'foo']);
@@ -199,7 +166,7 @@ class BasicTest extends \PHPUnit\Framework\TestCase
 
     function test__get_datatype()
     {
-        $this->assertSame( $this->db->get_datatype('test', 'col1'), 'varchar' );
+        $this->assertSame( in_array($this->db->get_datatype('test', 'col1'), ['varchar','character varying']), true );
         $this->assertSame( $this->db->get_datatype('test', 'col0'), null );
     }
 
@@ -215,7 +182,7 @@ class BasicTest extends \PHPUnit\Framework\TestCase
         {
             $this->db->insert('test', ['id' => 1, 'col1' => (object)['foo' => 'bar']]);
         }
-        catch(Exception $e)
+        catch(\Exception $e)
         {
             $this->assertTrue(true);
         }
@@ -223,7 +190,7 @@ class BasicTest extends \PHPUnit\Framework\TestCase
         {
             $this->db->query('SELCET * FROM test');
         }
-        catch(Exception $e)
+        catch(\Exception $e)
         {
             $this->assertTrue(true);
         }
