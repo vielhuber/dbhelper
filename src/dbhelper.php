@@ -825,7 +825,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
-                            $column === 'updated_at' ||
+                            $column === 'created_at' || $column === 'updated_at' || // laravel
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
 
@@ -850,7 +850,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
-                            $column === 'updated_at' ||
+                            $column === 'created_at' || $column === 'updated_at' || // laravel
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '
@@ -916,7 +916,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
-                            $column === 'updated_at' ||
+                            $column === 'created_at' || $column === 'updated_at' || // laravel
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
 
@@ -950,7 +950,7 @@ class dbhelper
                         if(
                             $column === $primary_key ||
                             $column === 'updated_by' ||
-                            $column === 'updated_at' ||
+                            $column === 'created_at' || $column === 'updated_at' || // laravel
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '
