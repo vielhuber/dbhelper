@@ -15,3 +15,4 @@ function db_get_columns($table) { global $db; return $db->get_columns($table); }
 function db_has_column($table, $column) { global $db; return $db->has_column($table, $column); }
 function db_get_datatype($table, $column) { global $db; return $db->get_datatype($table, $column); }
 function db_get_primary_key($table) { global $db; return $db->get_primary_key($table); }
+function db_uuid() { global $db; return $db->uuid(); }

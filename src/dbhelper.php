@@ -1311,7 +1311,7 @@ class dbhelper
             {
                 foreach($ids as $id)
                 {
-                    $this->insert('logs', ['log_event' => 'delete', 'log_table' => $table, 'log_key' => $id, 'log_uuid' => $this->fetch_var('SELECT '.$this->uuid_query().''), 'updated_by' => $this->config['updated_by']]);
+                    $this->insert('logs', ['log_event' => 'delete', 'log_table' => $table, 'log_key' => $id, 'log_uuid' => $this->uuid(), 'updated_by' => $this->config['updated_by']]);
                 }
             }
         }
@@ -1365,6 +1365,11 @@ class dbhelper
         {
             return '"'.$name.'"';
         }
+    }
+
+    public function uuid()
+    {
+        return $this->fetch_var('SELECT '.$this->uuid_query());
     }
 
     private function uuid_query()

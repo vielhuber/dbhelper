@@ -68,6 +68,7 @@ $db->get_columns('tablename') // ['col1', 'col2', ...]
 $db->has_column('tablename', 'col1') // true
 $db->get_datatype('tablename', 'col1') // varchar 
 $db->get_primary_key('tablename') // id
+$db->uuid() // generate uuid (v4) from inside the database
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
@@ -140,7 +141,7 @@ $db->insert('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()
 
 $db->update('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()], ['id' => 42]);
 
-$db->insert('logs', ['log_event' => 'delete', 'log_table' => 'tablename', 'log_key' => 42, 'updated_by' => get_current_user_id()]);
+$db->insert('logs', ['log_event' => 'delete', 'log_table' => 'tablename', 'log_key' => 42, 'log_uuid' => $db->uuid(), 'updated_by' => get_current_user_id()]);
 $db->delete('tablename', ['id' => 42]);
 ```
 

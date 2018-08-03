@@ -176,6 +176,15 @@ trait BasicTest
         $this->assertSame( $this->db->get_primary_key('test0'), null );
     }
 
+    function test__uuid()
+    {
+        $uuid1 = $this->db->uuid();
+        $uuid2 = $this->db->uuid();
+        $this->assertSame( strlen($uuid1) === 36, true );
+        $this->assertSame( strlen($uuid2) === 36, true );
+        $this->assertSame( $uuid1 === $uuid2, false );
+    }
+
     function test__errors()
     {
         try
