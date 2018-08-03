@@ -922,7 +922,7 @@ class dbhelper
 
                         $carry .= '
                             INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                            VALUES(\'insert\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).', uuid, NEW.updated_by);
+                            VALUES(\'insert\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).'::text, uuid, NEW.updated_by);
                         ';
                         return $carry;
                     }).'
@@ -956,7 +956,7 @@ class dbhelper
                         $carry .= '
                             IF (OLD.'.$this->quote($column).' <> NEW.'.$this->quote($column).') OR (OLD.'.$this->quote($column).' IS NULL AND NEW.'.$this->quote($column).' IS NOT NULL) OR (OLD.'.$this->quote($column).' IS NOT NULL AND NEW.'.$this->quote($column).' IS NULL) THEN
                                 INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                                VALUES(\'update\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).', uuid, NEW.updated_by);
+                                VALUES(\'update\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).'::text, uuid, NEW.updated_by);
                             END IF;
                         ';
                         return $carry;
