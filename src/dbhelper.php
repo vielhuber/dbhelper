@@ -736,7 +736,7 @@ class dbhelper
               id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
               log_event varchar(10) NOT NULL,
               log_table varchar(100) NOT NULL,
-              log_key bigint(20) UNSIGNED NOT NULL,
+              log_key varchar(100) UNSIGNED NOT NULL,
               log_column varchar(100) DEFAULT NULL,
               log_value varchar(1000) DEFAULT NULL,
               log_uuid varchar(36) DEFAULT NULL,
@@ -753,7 +753,7 @@ class dbhelper
               id SERIAL NOT NULL PRIMARY KEY,
               log_event varchar(10) NOT NULL,
               log_table varchar(100) NOT NULL,
-              log_key bigint NOT NULL,
+              log_key varchar(100) NOT NULL,
               log_column varchar(100) DEFAULT NULL,
               log_value varchar(1000) DEFAULT NULL,
               log_uuid varchar(36) DEFAULT NULL,
@@ -922,7 +922,7 @@ class dbhelper
 
                         $carry .= '
                             INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                            VALUES(\'insert\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).'::text, uuid, NEW.updated_by);
+                            VALUES(\'insert\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).', uuid, NEW.updated_by);
                         ';
                         return $carry;
                     }).'
@@ -956,7 +956,7 @@ class dbhelper
                         $carry .= '
                             IF (OLD.'.$this->quote($column).' <> NEW.'.$this->quote($column).') OR (OLD.'.$this->quote($column).' IS NULL AND NEW.'.$this->quote($column).' IS NOT NULL) OR (OLD.'.$this->quote($column).' IS NOT NULL AND NEW.'.$this->quote($column).' IS NULL) THEN
                                 INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                                VALUES(\'update\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).'::text, uuid, NEW.updated_by);
+                                VALUES(\'update\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).', uuid, NEW.updated_by);
                             END IF;
                         ';
                         return $carry;
