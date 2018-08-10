@@ -638,7 +638,7 @@ class dbhelper
         }
         else
         {
-            $this->query('DELETE FROM '.$table);
+            $this->query('TRUNCATE TABLE '.$table);
         }
     }
 
