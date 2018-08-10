@@ -142,6 +142,27 @@ trait BasicTest
         $this->assertSame($this->db->fetch_all('SELECT * FROM test'), []);
     }
 
+    function test__clear()
+    {
+        $this->db->insert('test', ['col1' => 'foo']);
+        $this->assertSame(1, $this->db->fetch_var('SELECT COUNT(*) FROM test'));
+        $this->db->insert('test', ['col1' => 'foo']);
+        $this->db->insert('test', ['col1' => 'foo']);
+        $this->db->insert('test', ['col1' => 'foo']);
+        $this->assertSame(4, $this->db->fetch_var('SELECT COUNT(*) FROM test'));
+        $this->db->clear('test');
+        $this->assertSame(0, $this->db->fetch_var('SELECT COUNT(*) FROM test'));
+        $this->db->clear();
+        try {
+            $this->db->fetch_var('SELECT COUNT(*) FROM test');
+            $this->assertSame(true,false);
+        }
+        catch(\Exception $e)
+        {
+            $this->assertSame(true,true);
+        }
+    }
+
     function test__last_insert_id()
     {
         $id = $this->db->insert('test', ['col1' => 'foo']);

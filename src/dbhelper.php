@@ -613,25 +613,32 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
-    public function clear($database)
+    public function clear($table = null)
     {
-        if( $this->sql->engine === 'mysql' )
+        if( $table === null )
         {
-            $this->query('SET FOREIGN_KEY_CHECKS = 0');        
-            $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $database);
-            if( !empty($tables) )
+            if( $this->sql->engine === 'mysql' )
             {
-                foreach($tables as $tables__value)
+                $this->query('SET FOREIGN_KEY_CHECKS = 0');        
+                $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $this->sql->database);
+                if( !empty($tables) )
                 {
-                    $this->query('DROP TABLE '.$tables__value);
+                    foreach($tables as $tables__value)
+                    {
+                        $this->query('DROP TABLE '.$tables__value);
+                    }
                 }
+                $this->query('SET FOREIGN_KEY_CHECKS = 1');
             }
-            $this->query('SET FOREIGN_KEY_CHECKS = 1');
+            else if( $this->sql->engine === 'postgres' )
+            {
+                $this->query('DROP SCHEMA public CASCADE');
+                $this->query('CREATE SCHEMA public');
+            }
         }
-        else if( $this->sql->engine === 'postgres' )
+        else
         {
-            $this->query('DROP SCHEMA public CASCADE');
-            $this->query('CREATE SCHEMA public');
+            $this->query('DELETE FROM '.$table);
         }
     }
 

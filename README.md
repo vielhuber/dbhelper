@@ -50,8 +50,9 @@ $db->query('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, n
 // gets transformed to
 $db->query('UPDATE tablename SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
-/* delete all tables (without dropping the whole database) */
-$db->clear('database');
+/* clean up */ 
+$db->clear(); // delete all tables (without dropping the whole database)
+$db->clear('tablename'); // delete all rows in a table
 
 /* raw queries */
 $id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);

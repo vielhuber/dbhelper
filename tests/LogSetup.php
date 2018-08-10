@@ -22,7 +22,7 @@ trait LogSetup
         ]);
         $credentials = $this->getCredentials();
         $this->db->connect($credentials->driver, $credentials->engine, $credentials->host, $credentials->username, $credentials->password, 'dbhelper', $credentials->port);
-        $this->db->clear('dbhelper');
+        $this->db->clear();
         $this->db->query('
             CREATE TABLE IF NOT EXISTS test
             (
@@ -49,7 +49,7 @@ trait LogSetup
 
     function tearDown()
     {
-        //$this->db->clear('dbhelper');
+        //$this->db->clear();
         $this->db->disconnect();
     }
 

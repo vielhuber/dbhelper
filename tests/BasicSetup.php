@@ -13,7 +13,7 @@ trait BasicSetup
         $this->db = new dbhelper();
         $credentials = $this->getCredentials();
         $this->db->connect($credentials->driver, $credentials->engine, $credentials->host, $credentials->username, $credentials->password, 'dbhelper', $credentials->port);
-        $this->db->clear('dbhelper');
+        $this->db->clear();
         $this->db->query('
             CREATE TABLE test
             (
@@ -27,7 +27,7 @@ trait BasicSetup
 
     function tearDown()
     {
-        //$this->db->clear('dbhelper');
+        //$this->db->clear();
         $this->db->disconnect();
     }
 
