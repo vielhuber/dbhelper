@@ -18,23 +18,23 @@ trait LogTest
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
         $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => null, 'updated_by' => 43]);
 
-        $this->db->query('INSERT INTO test(col1, col2, col3) VALUES(?,?,?)', ['foo3','foo3','foo3']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'col4' => null, 'updated_by' => 42]);
+        $this->db->query('INSERT INTO test(col1, col2, col3) VALUES(?,?,?)', ['foo3','foo3',3]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 3, 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
-        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 3, 'updated_by' => 42]);
 
         $this->db->query('
             insert into
             test (col1, col2, col3) VALUES (?, ?, ?)
-        ', ['foo4','foo4','foo4']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo4', 'col2' => 'foo4', 'col3' => 'foo4', 'col4' => null, 'updated_by' => 42]);
+        ', ['foo4','foo4',4]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => ++$id, 'col1' => 'foo4', 'col2' => 'foo4', 'col3' => 4, 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
-        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo4', 'updated_by' => 42]);
+        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 4, 'updated_by' => 42]);
 
         $id = $this->db->insert('test2', ['col1' => 'foo1']);
         $this->assertEquals($this->db->fetch_row('SELECT * FROM test2 WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
-        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo4', 'updated_by' => 42]);
+        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 4, 'updated_by' => 42]);
 
         $id = $this->db->insert('test', ['col1' => 'foo1']);
         $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null, 'updated_by' => 42]);
@@ -56,10 +56,10 @@ trait LogTest
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
         $this->assertEquals($row, ['log_event' => 'update', 'log_table' => 'test', 'log_column' => 'col1', 'log_value' => 'foo', 'updated_by' => 43]);
 
-        $this->db->query('UPDATE test SET col1 = ?, col2 = ?, col3 = ?', ['foo3','foo3','foo3']);
-        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => $id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 'foo3', 'col4' => null, 'updated_by' => 42]);
+        $this->db->query('UPDATE test SET col1 = ?, col2 = ?, col3 = ?', ['foo3','foo3',3]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test ORDER BY id DESC LIMIT 1'), ['id' => $id, 'col1' => 'foo3', 'col2' => 'foo3', 'col3' => 3, 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
-        $this->assertEquals($row, ['log_event' => 'update', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 'foo3', 'updated_by' => 42]);
+        $this->assertEquals($row, ['log_event' => 'update', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 3, 'updated_by' => 42]);
     }
 
     function test__delete()
