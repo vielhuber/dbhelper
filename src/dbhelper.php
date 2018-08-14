@@ -1058,24 +1058,9 @@ class dbhelper
         */
         if( !empty($params) )
         {
+            
             $params_flattened = [];
-            if( is_array($params) && count($params) > 0 )
-            {
-                foreach($params as $params__value)
-                {
-                    if( is_array($params__value) && count($params__value) > 0 )
-                    {
-                        foreach($params__value as $params__value__value)
-                        {
-                            $params_flattened[] = $params__value__value;
-                        }
-                    }
-                    elseif( !is_array($params__value) )
-                    {
-                        $params_flattened[] = $params__value;
-                    }
-                }
-            }
+            array_walk_recursive($params, function($a) use (&$params_flattened) { $params_flattened[] = $a; });
             $params = $params_flattened;
         }
 

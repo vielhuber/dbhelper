@@ -63,9 +63,9 @@ trait BasicTest
     {
         $id = $this->db->insert('test', ['col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz']);
         $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', 'foo', 'bar', 'baz'), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
-        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo'], ['bar'], ['baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo'], ['bar'], [[[['baz']]]]), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
         $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo', 'bar'], 'baz'), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
-        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', 'foo', ['bar', 'baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
+        $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', 'foo', ['bar', ['baz']]), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
         $this->assertSame( $this->db->fetch_row('SELECT * FROM test WHERE col1 = ? AND col2 = ? AND col3 = ?', ['foo', 'bar', 'baz']), ['id' => $id, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'] );
     }
 

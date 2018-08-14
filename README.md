@@ -38,7 +38,7 @@ $db->fetch_col('SELECT col FROM tablename WHERE ID > ?', 1);
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 /* automatic flattened arguments */
-$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,5,6]);
+$db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,[5,6]]);
 // gets transformed to
 $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 
