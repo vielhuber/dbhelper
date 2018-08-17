@@ -26,8 +26,12 @@ trait BasicTest
     {
         $id = $this->db->insert('test', ['col1' => 'foo']);
         $this->assertSame( $this->db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', 'foo'), 1 );
+        $id = $this->db->insert('test', ['col1' => 'bar']);
+        $this->assertSame( $this->db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'), 2 );
         $this->db->delete('test', ['col1' => 'foo']);
-        $this->assertSame( $this->db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', 'foo'), 0 );
+        $this->assertSame( $this->db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'), 1 );
+        $this->db->query('DELETE FROM test WHERE col1 = ?', 'bar');
+        $this->assertSame( $this->db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'), 0 );
     }
 
     function test__fetch_all()
