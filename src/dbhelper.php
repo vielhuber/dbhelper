@@ -745,9 +745,9 @@ class dbhelper
               log_table varchar(100) NOT NULL,
               log_key varchar(100) NOT NULL,
               log_column varchar(100) DEFAULT NULL,
-              log_value varchar(1000) DEFAULT NULL,
+              log_value LONGTEXT DEFAULT NULL,
               log_uuid varchar(36) DEFAULT NULL,
-              updated_by varchar(1000) DEFAULT NULL,
+              updated_by varchar(100) DEFAULT NULL,
               updated_at datetime(0) DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) NOT NULL
             )
         ');
@@ -762,9 +762,9 @@ class dbhelper
               log_table varchar(100) NOT NULL,
               log_key varchar(100) NOT NULL,
               log_column varchar(100) DEFAULT NULL,
-              log_value varchar(1000) DEFAULT NULL,
+              log_value TEXT DEFAULT NULL,
               log_uuid varchar(36) DEFAULT NULL,
-              updated_by varchar(1000) DEFAULT NULL,
+              updated_by varchar(100) DEFAULT NULL,
               updated_at TIMESTAMP without time zone NULL
             )
         ');

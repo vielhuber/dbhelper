@@ -40,6 +40,10 @@ trait LogTest
         $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => 'foo1', 'col2' => null, 'col3' => null, 'col4' => null, 'updated_by' => 42]);
         $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
         $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => null, 'updated_by' => 42]);
+
+        $id = $this->db->insert('test', ['col2' => str_repeat('x',5000)]);
+        $this->assertEquals($this->db->fetch_var('SELECT SUBSTRING(col2, 1, 3) FROM test WHERE id = ?', $id), 'xxx');
+        $this->assertEquals($this->db->fetch_var('SELECT SUBSTRING(log_value, 1, 3) FROM logs WHERE log_column = ? ORDER BY id DESC LIMIT 1', 'col2'), 'xxx');
     }
 
     function test__update()

@@ -28,7 +28,7 @@ trait LogSetup
             (
               id SERIAL PRIMARY KEY,
               col1 varchar(255),
-              col2 varchar(255),
+              col2 TEXT,
               col3 int,
               col4 varchar(255)
             )
@@ -38,7 +38,7 @@ trait LogSetup
             (
               id SERIAL PRIMARY KEY,
               col1 varchar(255),
-              col2 varchar(255),
+              col2 TEXT,
               col3 int,
               col4 varchar(255)
             )
