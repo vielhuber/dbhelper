@@ -800,6 +800,37 @@ class dbhelper
         }
     }
 
+    public function disable_logging()
+    {
+        foreach( $this->get_tables() as $table__value )
+        {
+            if( $this->sql->engine === 'mysql' )
+            {
+                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-insert-'.$table__value));
+                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-update-'.$table__value));
+                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-delete-'.$table__value));
+            }
+            if( $this->sql->engine === 'postgres' )
+            {
+                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-insert-'.$table__value).' ON '.$this->quote($table__value));
+                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-update-'.$table__value).' ON '.$this->quote($table__value));
+                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-delete-'.$table__value).' ON '.$this->quote($table__value));
+            }
+        }
+    }
+
+    public function enable_logging()
+    {
+        if( $this->sql->engine === 'mysql' )
+        {
+            $this->setup_logging_create_triggers_mysql();
+        }
+        if( $this->sql->engine === 'postgres' )
+        {
+            $this->setup_logging_create_triggers_postgres();
+        }
+    }
+
     private function setup_logging_create_triggers_mysql()
     {
         foreach( $this->get_tables() as $table__value )

@@ -92,4 +92,23 @@ trait LogTest
         $this->assertEquals($row, ['log_event' => 'delete', 'log_table' => 'test', 'log_key' => $id+5, 'log_column' => null, 'log_value' => null, 'updated_by' => 42]);
     }
 
+    function test__enable_disable()
+    {
+
+        $id = $this->db->insert('test', ['col3' => 9991]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => null, 'col2' => null, 'col3' => 9991, 'col4' => null, 'updated_by' => 42]);
+        $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
+        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 9991, 'updated_by' => 42]);
+        $this->db->disable_logging();
+        $id = $this->db->insert('test', ['col3' => 9992]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => null, 'col2' => null, 'col3' => 9992, 'col4' => null, 'updated_by' => 42]);
+        $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
+        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 9991, 'updated_by' => 42]);
+        $this->db->enable_logging();
+        $id = $this->db->insert('test', ['col3' => 9993]);
+        $this->assertEquals($this->db->fetch_row('SELECT * FROM test WHERE id = ?', $id), ['id' => $id, 'col1' => null, 'col2' => null, 'col3' => 9993, 'col4' => null, 'updated_by' => 42]);
+        $row = $this->db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1'); unset($row['id']); unset($row['log_key']); unset($row['log_uuid']); unset($row['updated_at']);
+        $this->assertEquals($row, ['log_event' => 'insert', 'log_table' => 'test', 'log_column' => 'col3', 'log_value' => 9993, 'updated_by' => 42]);
+    }
+
 }
