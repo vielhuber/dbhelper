@@ -156,8 +156,9 @@ dbhelper then automatically injects the ```updated_by``` column on all insert/up
 
 important note: if we manipulate data outside of our web application, the triggers also work, except with accurate values in ```updated_by```. this is especially true for delete statements (they also work without the manual insert query upfront).
 
-call the following helper functinos, if you need to (temporarily) disable logging by triggers:
-```
+call the following helper functions, if you (temporarily) need to disable logging by triggers:
+
+```php
 $db->disable_logging();
 $db->query('DELETE * FROM mega_big_table');
 $db->enable_logging();
