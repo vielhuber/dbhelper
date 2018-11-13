@@ -1167,7 +1167,14 @@ class dbhelper
                 if( strpos($return, '?') !== false )
                 {
                     $directive = '%s';
-                    if( is_int($params__value) || ctype_digit((string)$params__value) ) { $directive = '%d'; }
+                    if(
+                        (is_int($params__value) || ctype_digit((string)$params__value))
+                        &&
+                        (
+                            // prevent strings like "00001" to be catched as integers
+                            (strlen($params__value) === 1 && $params__value == '0') || strpos($params__value,'0') !== 0
+                        )
+                    ) { $directive = '%d'; }
                     else if( is_float($params__value) ) { $directive = '%f'; }                
                     $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
                 }
