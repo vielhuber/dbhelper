@@ -16,3 +16,6 @@ function db_has_column($table, $column) { global $db; return $db->has_column($ta
 function db_get_datatype($table, $column) { global $db; return $db->get_datatype($table, $column); }
 function db_get_primary_key($table) { global $db; return $db->get_primary_key($table); }
 function db_uuid() { global $db; return $db->uuid(); }
+function db_setup_logging() { global $db; return $db->setup_logging(); }
+function db_disable_logging() { global $db; return $db->disable_logging(); }
+function db_enable_logging() { global $db; return $db->enable_logging(); }
