@@ -129,3 +129,8 @@ function db_enable_logging()
     global $db;
     return $db->enable_logging();
 }
+function db_enable_auto_inject()
+{
+    global $db;
+    return $db->enable_auto_inject();
+}
