@@ -5,12 +5,12 @@ use vielhuber\dbhelper\dbhelper;
 
 trait LogSetup
 {
+    public static $db;
+    public static $credentials;
 
-    public $db;
-
-    function setUp()
+    public static function setUpBeforeClass()
     {
-        $this->db = new dbhelper([
+        self::$db = new dbhelper([
             'enable_logging' => true,
             'logging_table' => 'logs',
             'exclude' => [
@@ -20,10 +20,27 @@ trait LogSetup
             'delete_older' => 12,
             'updated_by' => 42
         ]);
-        $credentials = $this->getCredentials();
-        $this->db->connect($credentials->driver, $credentials->engine, $credentials->host, $credentials->username, $credentials->password, 'dbhelper', $credentials->port);
-        $this->db->clear();
-        $this->db->query('
+        self::$credentials = self::getCredentials();
+        self::$db->connect_with_create(
+            self::$credentials->driver,
+            self::$credentials->engine,
+            self::$credentials->host,
+            self::$credentials->username,
+            self::$credentials->password,
+            self::$credentials->database,
+            self::$credentials->port
+        );
+    }
+
+    public static function tearDownAfterClass()
+    {
+        self::$db->disconnect_with_delete();
+    }
+
+    function setUp()
+    {
+        self::$db->clear(); // if something failed
+        self::$db->query('
             CREATE TABLE IF NOT EXISTS test
             (
               id SERIAL PRIMARY KEY,
@@ -33,7 +50,7 @@ trait LogSetup
               col4 varchar(255)
             )
         ');
-        $this->db->query('
+        self::$db->query('
             CREATE TABLE IF NOT EXISTS test2
             (
               id SERIAL PRIMARY KEY,
@@ -43,14 +60,12 @@ trait LogSetup
               col4 varchar(255)
             )
         ');
-        $this->db->setup_logging();
-        $this->db->enable_auto_inject();
+        self::$db->setup_logging();
+        self::$db->enable_auto_inject();
     }
 
     function tearDown()
     {
-        //$this->db->clear();
-        $this->db->disconnect();
+        self::$db->clear();
     }
-
 }

@@ -5,16 +5,33 @@ use vielhuber\dbhelper\dbhelper;
 
 trait BasicSetup
 {
+    public static $db;
+    public static $credentials;
 
-    public $db;
+    public static function setUpBeforeClass()
+    {
+        self::$db = new dbhelper();
+        self::$credentials = self::getCredentials();
+        self::$db->connect_with_create(
+            self::$credentials->driver,
+            self::$credentials->engine,
+            self::$credentials->host,
+            self::$credentials->username,
+            self::$credentials->password,
+            self::$credentials->database,
+            self::$credentials->port
+        );
+    }
+
+    public static function tearDownAfterClass()
+    {
+        self::$db->disconnect_with_delete();
+    }
 
     function setUp()
     {
-        $this->db = new dbhelper();
-        $credentials = $this->getCredentials();
-        $this->db->connect($credentials->driver, $credentials->engine, $credentials->host, $credentials->username, $credentials->password, 'dbhelper', $credentials->port);
-        $this->db->clear();
-        $this->db->query('
+        self::$db->clear(); // if something failed
+        self::$db->query('
             CREATE TABLE test
             (
               id SERIAL PRIMARY KEY,
@@ -27,8 +44,6 @@ trait BasicSetup
 
     function tearDown()
     {
-        //$this->db->clear();
-        $this->db->disconnect();
+        self::$db->clear();
     }
-
 }

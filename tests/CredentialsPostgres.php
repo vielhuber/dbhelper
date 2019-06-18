@@ -5,17 +5,16 @@ use vielhuber\dbhelper\dbhelper;
 
 trait CredentialsPostgres
 {
-
-    function getCredentials()
+    public static function getCredentials()
     {
-        return (object)[
+        return (object) [
             'driver' => 'pdo',
             'engine' => 'postgres',
             'host' => '127.0.0.1',
             'username' => 'postgres',
             'password' => 'root',
-            'port' => 5432
+            'port' => 5432,
+            'database' => 'dbhelper'
         ];
     }
-
 }

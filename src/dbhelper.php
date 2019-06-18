@@ -22,7 +22,7 @@ class dbhelper
             case 'pdo':
                 if ($engine === 'mysql')
                 {
-                    $sql = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $database, $username, $password, [
+                    $sql = new PDO('mysql:host=' . $host . ';port=' . $port . (($database !== null)?(';dbname=' . $database):('')), $username, $password, [
                         PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
                         PDO::ATTR_EMULATE_PREPARES => false,
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
@@ -30,8 +30,8 @@ class dbhelper
                 }
                 else if ($engine === 'postgres')
                 {
-                    $sql = new PDO('pgsql:host=' . $host . ';port=' . $port . ';dbname=' . $database, $username, $password);
-                    $sql->query('SET NAMES UTF8');
+                    $sql = new PDO('pgsql:host=' . $host . ';port=' . $port . (($database !== null)?(';dbname=' . $database):('')), $username, $password);
+                    $sql->query('SET NAMES UTF8');                    
                 }
                 else
                 {
@@ -59,14 +59,77 @@ class dbhelper
                 $sql->database = $wpdb->dbname;
                 break;
 
-            case 'joomla':
+        }
+        $sql->driver = $driver;
+        $sql->engine = $engine;
+        $sql->host = $host;
+        $sql->username = $username;
+        $sql->password = $password;
+        $sql->port = $port;
+        $this->sql = $sql;
+    }
+
+    public function create_database($database)
+    {
+        switch ($this->sql->driver)
+        {
+            case 'pdo':
+                if ($this->sql->engine === 'mysql')
+                {
+                    $this->sql->exec('CREATE DATABASE IF NOT EXISTS '.$database.';');
+                }
+                else if ($this->sql->engine === 'postgres')
+                {
+                    $this->sql->exec('CREATE DATABASE '.$database.';');
+                }
+                break;
+
+            case 'mysqli':
+                
+                break;
+
+            case 'wordpress':
                 // TODO
                 break;
 
         }
-        $sql->driver = $driver;
-        $sql->engine = $engine;
-        $this->sql = $sql;
+    }
+
+    public function connect_with_create($driver, $engine = null, $host = null, $username = null, $password = null, $database = null, $port = 3306)
+    {
+        $this->connect($driver, $engine, $host, $username, $password, null, $port);
+        $this->create_database($database);
+        $this->disconnect();
+        $this->connect($driver, $engine, $host, $username, $password, $database, $port);
+    }
+
+    public function delete_database($database)
+    {
+        switch ($this->sql->driver)
+        {
+            case 'pdo':
+                $this->sql->exec('DROP DATABASE '.$database.';');
+                break;
+            case 'mysqli':                
+                break;
+            case 'wordpress':
+                break;
+        }        
+    }
+
+    public function disconnect_with_delete()
+    {
+        $driver = $this->sql->driver;
+        $engine = $this->sql->engine;
+        $host = $this->sql->host;
+        $username = $this->sql->username;
+        $password = $this->sql->password;
+        $database = $this->sql->database;
+        $port = $this->sql->port;
+        $this->disconnect();
+        $this->connect($driver, $engine, $host, $username, $password, null, $port);
+        $this->delete_database($database);
+        $this->disconnect();
     }
 
     public function disconnect()
@@ -83,10 +146,6 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                // TODO
-                break;
-
-            case 'joomla':
                 // TODO
                 break;
 
@@ -139,10 +198,6 @@ class dbhelper
                 }
                 break;
 
-            case 'joomla':
-                // TODO
-                break;
-
         }
 
         return $data;
@@ -187,10 +242,6 @@ class dbhelper
                 {
                     throw new \Exception($this->sql->last_error);
                 }
-                break;
-
-            case 'joomla':
-                // TODO
                 break;
 
         }
@@ -246,10 +297,6 @@ class dbhelper
                 {
                     throw new \Exception($this->sql->last_error);
                 }
-                break;
-
-            case 'joomla':
-                // TODO
                 break;
 
         }
@@ -308,10 +355,6 @@ class dbhelper
                 {
                     throw new \Exception($this->sql->last_error);
                 }
-                break;
-
-            case 'joomla':
-                // TODO
                 break;
 
         }
@@ -374,10 +417,6 @@ class dbhelper
                 {
                     throw new \Exception($this->sql->last_error);
                 }
-                break;
-
-            case 'joomla':
-                // TODO
                 break;
 
         }
@@ -489,10 +528,6 @@ class dbhelper
 
             case 'wordpress':
                 $last_insert_id = $this->fetch_var("SELECT LAST_INSERT_ID();");
-                break;
-
-            case 'joomla':
-                // TODO
                 break;
 
         }
@@ -864,7 +899,7 @@ class dbhelper
                             $column === $primary_key ||
                             $column === 'updated_by' ||
                             $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' || // laravel
+                            $column === 'created_at' || $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
 
@@ -890,7 +925,7 @@ class dbhelper
                             $column === $primary_key ||
                             $column === 'updated_by' ||
                             $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' || // laravel
+                            $column === 'created_at' || $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '
@@ -957,7 +992,7 @@ class dbhelper
                             $column === $primary_key ||
                             $column === 'updated_by' ||
                             $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' || // laravel
+                            $column === 'created_at' || $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
 
@@ -992,7 +1027,7 @@ class dbhelper
                             $column === $primary_key ||
                             $column === 'updated_by' ||
                             $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' || // laravel
+                            $column === 'created_at' || $column === 'updated_at' ||
                             (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
                         ) { return $carry; }
                         $carry .= '

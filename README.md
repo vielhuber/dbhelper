@@ -5,13 +5,15 @@ dbhelper is a small php wrapper for mysql/postgres databases.
 ## installation
 
 install once with composer:
+
 ```
 composer require vielhuber/dbhelper
 ```
 
 then add this to your project:
+
 ```php
-require __DIR__.'/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 use vielhuber\dbhelper\dbhelper;
 $db = new dbhelper();
 ```
@@ -22,6 +24,7 @@ $db = new dbhelper();
 /* connect to database */
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
 $db->connect('pdo', 'postgres', '127.0.0.1', 'username', 'password', 'database', 3306);
+$db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306); // database must not be available
 
 /* disconnect from database */
 $db->disconnect();
@@ -50,9 +53,25 @@ $db->query('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, n
 // gets transformed to
 $db->query('UPDATE tablename SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT NULL');
 
-/* clean up */ 
+/* clean up */
 $db->clear(); // delete all tables (without dropping the whole database)
 $db->clear('tablename'); // delete all rows in a table
+
+/* create and connect to database if exists */
+$db->connect_with_create('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
+    // this is a shorthand for
+    $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306);
+    $db->create_database('database');
+    $db->disconnect();
+    $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
+
+/* delete database */
+$db->disconnect_with_delete();
+    // this is a shorthand for
+    $db->disconnect();
+    $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306);
+    $db->delete_database('database');
+    $db->disconnect();
 
 /* raw queries */
 $id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
@@ -67,7 +86,7 @@ $db->last_insert_id();
 $db->get_tables() // ['tablename', ...]
 $db->get_columns('tablename') // ['col1', 'col2', ...]
 $db->has_column('tablename', 'col1') // true
-$db->get_datatype('tablename', 'col1') // varchar 
+$db->get_datatype('tablename', 'col1') // varchar
 $db->get_primary_key('tablename') // id
 $db->uuid() // generate uuid (v4) from inside the database
 
@@ -105,7 +124,7 @@ $db = new dbhelper([
     'logging_table' => 'logs',
     'exclude' => [
         'tables' => ['table1'],
-        'columns' => ['table2' => ['col1','col2','col3']]
+        'columns' => ['table2' => ['col1', 'col2', 'col3']]
     ],
     'delete_older' => 12, // months
     'updated_by' => get_current_user_id()
@@ -114,35 +133,41 @@ $db->connect('...');
 $db->setup_logging();
 ```
 
-```setup_logging()``` does four things:
+`setup_logging()` does four things:
 
-- it creates a logging table (if not exists)
-- it appends a single column ```updated_by``` to every table in the database (if not exists)
-- it creates triggers for all insert/update/delete events (if not exists)
-- it deletes old logging entries based on the ```delete_older``` option
+-   it creates a logging table (if not exists)
+-   it appends a single column `updated_by` to every table in the database (if not exists)
+-   it creates triggers for all insert/update/delete events (if not exists)
+-   it deletes old logging entries based on the `delete_older` option
 
 you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. it is recommened to exclude blob/bytea columns.
 
 the logging table has the following schema:
 
-- ```id```: unique identifier of that single change
-- ```log_event```: insert/update/delete
-- ```log_table```: name of the table of the modified row
-- ```log_key```: key of the modified row
-- ```log_column```: column of the modified row
-- ```log_value```: value of the modified row
-- ```log_uuid```: unique identifier of that row change
-- ```updated_by```: who did make that change
-- ```updated_at```: date and time of the event
+-   `id`: unique identifier of that single change
+-   `log_event`: insert/update/delete
+-   `log_table`: name of the table of the modified row
+-   `log_key`: key of the modified row
+-   `log_column`: column of the modified row
+-   `log_value`: value of the modified row
+-   `log_uuid`: unique identifier of that row change
+-   `updated_by`: who did make that change
+-   `updated_at`: date and time of the event
 
-we now have to adjust our queries. ```updated_by``` must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
+we now have to adjust our queries. `updated_by` must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
 
 ```php
 $db->insert('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()]);
 
 $db->update('tablename', ['col1' => 'foo', 'updated_by' => get_current_user_id()], ['id' => 42]);
 
-$db->insert('logs', ['log_event' => 'delete', 'log_table' => 'tablename', 'log_key' => 42, 'log_uuid' => $db->uuid(), 'updated_by' => get_current_user_id()]);
+$db->insert('logs', [
+    'log_event' => 'delete',
+    'log_table' => 'tablename',
+    'log_key' => 42,
+    'log_uuid' => $db->uuid(),
+    'updated_by' => get_current_user_id()
+]);
 $db->delete('tablename', ['id' => 42]);
 ```
 
@@ -152,9 +177,9 @@ instead of all this we can let dbhelper magically do the heavy lifting on every 
 $db->enable_auto_inject();
 ```
 
-dbhelper then automatically injects the ```updated_by``` column on all insert/update statements and inserts a log entry before every delete query (all queries are handled, even those who are sent with ```$db->query```).
+dbhelper then automatically injects the `updated_by` column on all insert/update statements and inserts a log entry before every delete query (all queries are handled, even those who are sent with `$db->query`).
 
-important note: if we manipulate data outside of our web application, the triggers also work, except with accurate values in ```updated_by```. this is especially true for delete statements (they also work without the manual insert query upfront).
+important note: if we manipulate data outside of our web application, the triggers also work, except with accurate values in `updated_by`. this is especially true for delete statements (they also work without the manual insert query upfront).
 
 call the following helper functions, if you (temporarily) need to disable logging by triggers:
 
@@ -169,6 +194,7 @@ that's it – happy logging.
 ### wordpress support
 
 this also works for wordpress (using wpdb, prepared statements and stripslashes_deep under the hood):
+
 ```php
 $db->connect('wordpress');
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
@@ -181,7 +207,10 @@ as return values dbhelper usually returns associative arrays. if you use it with
 ### static version
 
 here is also a static version with static function calls (makes sense, if you use a single instance of dbhelper):
+
 ```php
-require_once($_SERVER['DOCUMENT_ROOT'].'/vendor/vielhuber/dbhelper/src/static.php');
+$db = new dbhelper();
+require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/vielhuber/dbhelper/src/static.php';
+db_connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
 db_fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```

@@ -5,17 +5,16 @@ use vielhuber\dbhelper\dbhelper;
 
 trait CredentialsMysql
 {
-
-    function getCredentials()
+    public static function getCredentials()
     {
-        return (object)[
+        return (object) [
             'driver' => 'pdo',
             'engine' => 'mysql',
             'host' => '127.0.0.1',
             'username' => 'root',
             'password' => 'root',
-            'port' => 3306
+            'port' => 3306,
+            'database' => 'dbhelper'
         ];
     }
-
 }
