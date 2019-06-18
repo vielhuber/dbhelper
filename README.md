@@ -206,7 +206,7 @@ as return values dbhelper usually returns associative arrays. if you use it with
 
 ### static version
 
-here is also a static version with static function calls (makes sense, if you use a single instance of dbhelper):
+here is also a static version with static function calls (this makes sense, if you use a single instance of dbhelper):
 
 ```php
 $db = new dbhelper();
