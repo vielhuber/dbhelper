@@ -14,11 +14,6 @@ function db_create_database(...$args)
     global $db;
     return $db->create_database(...$args);
 }
-function db_disconnect(...$args)
-{
-    global $db;
-    return $db->disconnect(...$args);
-}
 function db_disconnect_with_delete(...$args)
 {
     global $db;
