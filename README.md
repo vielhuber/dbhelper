@@ -63,7 +63,7 @@ $db->delete_table('tablename');
 
 /* create table */
 $db->create_table('tablename', [
-    'id' => 'SERIAL PRIMARY KEY',
+    'id' => 'SERIAL PRIMARY KEY', // use INTEGER instead of SERIAL on sqlite to get auto ids
     'col1' => 'varchar(255)',
     'col2' => 'varchar(255)',
     'col3' => 'varchar(255)'
