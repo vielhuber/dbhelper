@@ -40,26 +40,20 @@ trait LogSetup
     function setUp()
     {
         self::$db->clear(); // if something failed
-        self::$db->query('
-            CREATE TABLE IF NOT EXISTS test
-            (
-              id SERIAL PRIMARY KEY,
-              col1 varchar(255),
-              col2 TEXT,
-              col3 int,
-              col4 varchar(255)
-            )
-        ');
-        self::$db->query('
-            CREATE TABLE IF NOT EXISTS test2
-            (
-              id SERIAL PRIMARY KEY,
-              col1 varchar(255),
-              col2 TEXT,
-              col3 int,
-              col4 varchar(255)
-            )
-        ');
+        self::$db->create_table('test', [
+            'id' => 'SERIAL PRIMARY KEY',
+            'col1' => 'varchar(255)',
+            'col2' => 'TEXT',
+            'col3' => 'int',
+            'col4' => 'varchar(255)'
+        ]);
+        self::$db->create_table('test2', [
+            'id' => 'SERIAL PRIMARY KEY',
+            'col1' => 'varchar(255)',
+            'col2' => 'TEXT',
+            'col3' => 'int',
+            'col4' => 'varchar(255)'
+        ]);
         self::$db->setup_logging();
         self::$db->enable_auto_inject();
     }

@@ -1,6 +1,6 @@
 # 🍗 dbhelper 🍗
 
-dbhelper is a small php wrapper for mysql/postgres databases.
+dbhelper is a small php wrapper for mysql/postgres/sqlite databases.
 
 ## installation
 
@@ -24,6 +24,7 @@ $db = new dbhelper();
 /* connect to database */
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
 $db->connect('pdo', 'postgres', '127.0.0.1', 'username', 'password', 'database', 3306);
+$db->connect('pdo', 'sqlite', 'database.db');
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306); // database must not be available
 
 /* disconnect from database */
@@ -56,6 +57,17 @@ $db->query('UPDATE tablename SET col1 = NULL WHERE col2 IS NULL AND col3 IS NOT 
 /* clean up */
 $db->clear(); // delete all tables (without dropping the whole database)
 $db->clear('tablename'); // delete all rows in a table
+
+/* delete table */
+$db->delete_table('tablename');
+
+/* create table */
+$db->create_table('tablename', [
+    'id' => 'SERIAL PRIMARY KEY',
+    'col1' => 'varchar(255)',
+    'col2' => 'varchar(255)',
+    'col3' => 'varchar(255)'
+]);
 
 /* create and connect to database if exists */
 $db->connect_with_create('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
@@ -117,7 +129,7 @@ WHERE id IN (1,2,3) AND key IN ('1','2','3');
 
 ### logging
 
-dbhelper can support setting up a mature logging system.
+dbhelper can support setting up a mature logging system on mysql/postgres databases.
 
 ```php
 $db = new dbhelper([

@@ -33,6 +33,13 @@ class dbhelper
                     $sql = new PDO('pgsql:host=' . $host . ';port=' . $port . (($database !== null)?(';dbname=' . $database):('')), $username, $password);
                     $sql->query('SET NAMES UTF8');                    
                 }
+                else if ($engine === 'sqlite')
+                {
+                    $sql = new PDO('sqlite:' . $host, null, null, [
+                        PDO::ATTR_EMULATE_PREPARES => false,
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
+                    ]);               
+                }
                 else
                 {
                     throw new \Exception('missing engine');
@@ -82,6 +89,10 @@ class dbhelper
                 {
                     $this->sql->exec('CREATE DATABASE '.$database.';');
                 }
+                else if ($this->sql->engine === 'sqlite')
+                {
+                    @touch($database);
+                }
                 break;
 
             case 'mysqli':
@@ -108,7 +119,18 @@ class dbhelper
         switch ($this->sql->driver)
         {
             case 'pdo':
-                $this->sql->exec('DROP DATABASE '.$database.';');
+                if ($this->sql->engine === 'mysql')
+                {
+                    $this->sql->exec('DROP DATABASE '.$database.';');
+                }
+                else if ($this->sql->engine === 'postgres')
+                {
+                    $this->sql->exec('DROP DATABASE '.$database.';');
+                }
+                else if ($this->sql->engine === 'sqlite')
+                {
+                    @unlink($database);
+                }
                 break;
             case 'mysqli':                
                 break;
@@ -127,9 +149,20 @@ class dbhelper
         $database = $this->sql->database;
         $port = $this->sql->port;
         $this->disconnect();
-        $this->connect($driver, $engine, $host, $username, $password, null, $port);
-        $this->delete_database($database);
-        $this->disconnect();
+        if( $driver === 'pdo' && $engine === 'sqlite' )
+        {
+            $this->sql = (object)[];
+            $this->sql->driver = $driver;
+            $this->sql->engine = $engine;
+            $this->sql->host = $host;
+            $this->delete_database($host);
+        }
+        else
+        {
+            $this->connect($driver, $engine, $host, $username, $password, null, $port);
+            $this->delete_database($database);
+            $this->disconnect();
+        }
     }
 
     public function disconnect()
@@ -483,7 +516,11 @@ class dbhelper
         if( $this->sql->engine === 'postgres' )
         {
             return $this->last_insert_id($table, $this->get_primary_key($table));
-        }        
+        }
+        if( $this->sql->engine === 'sqlite' )
+        {
+            return $this->last_insert_id();
+        }  
     }
 
     public function last_insert_id($table = null, $column = null)
@@ -514,6 +551,16 @@ class dbhelper
                         {
                             $last_insert_id = $this->fetch_var("SELECT CURRVAL(pg_get_serial_sequence('".$table."','".$column."'));");
                         }
+                    }
+                    catch(\Exception $e)
+                    {   
+                        $last_insert_id = null;
+                    }
+                }
+                if ($this->sql->engine == 'sqlite')
+                {
+                    try {
+                        $last_insert_id = $this->fetch_var("SELECT last_insert_rowid();");
                     }
                     catch(\Exception $e)
                     {   
@@ -670,53 +717,154 @@ class dbhelper
                 $this->query('DROP SCHEMA public CASCADE');
                 $this->query('CREATE SCHEMA public');
             }
+            else if( $this->sql->engine === 'sqlite' )
+            {
+                $db_driver = $this->sql->driver;
+                $db_engine = $this->sql->engine;
+                $db_file = $this->sql->host;
+                $this->disconnect();
+                unlink($db_file);
+                $this->connect($db_driver, $db_engine, $db_file);
+            }
         }
         else
         {
-            $this->query('TRUNCATE TABLE '.$table);
+            if( $this->sql->engine === 'mysql' )
+            {
+                $this->query('TRUNCATE TABLE '.$table);
+            }
+            else if( $this->sql->engine === 'postgres' )
+            {
+                $this->query('TRUNCATE TABLE '.$table);
+            }
+            else if( $this->sql->engine === 'sqlite' )
+            {
+                $this->query('DELETE FROM '.$table);
+            }
         }
+    }
+
+    public function delete_table($table)
+    {
+        $this->query('DROP TABLE '.$table);
+    }
+
+    public function create_table($table, $cols)
+    {
+        $query = '';
+        $query .= 'CREATE TABLE IF NOT EXISTS ';
+        $query .= $table. ' ';
+        $query .= '(';
+        foreach($cols as $cols__key=>$cols__value)
+        {
+            $query .= $cols__key;
+            $query .= ' ';
+            $query .= $cols__value;
+            $query .= ',';
+        }
+        $query = substr($query, 0, -1);
+        $query .= ')';
+        $this->query($query);
     }
 
     public function get_tables()
     {
-        return $this->fetch_col(
-            'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
-            (($this->sql->engine==='mysql')?('def'):(($this->sql->engine==='postgres')?($this->sql->database):(''))),
-            (($this->sql->engine==='mysql')?($this->sql->database):(($this->sql->engine==='postgres')?('public'):('')))
-        );
+        if( $this->sql->engine === 'mysql' )
+        {
+            return $this->fetch_col(
+                'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
+                'def',
+                $this->sql->database
+            );
+        }
+        else if( $this->sql->engine === 'postgres' )
+        {
+            return $this->fetch_col(
+                'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
+                $this->sql->database,
+                'public'
+            );
+        }
+        else if( $this->sql->engine === 'sqlite' )
+        {
+            return $this->fetch_col(
+                'SELECT name FROM sqlite_master WHERE type = ?',
+                'table'
+            );
+        }
     }
 
     public function get_columns($table)
     {
-        return $this->fetch_col(
-            'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
-            (($this->sql->engine==='mysql')?('def'):(($this->sql->engine==='postgres')?($this->sql->database):(''))),
-            (($this->sql->engine==='mysql')?($this->sql->database):(($this->sql->engine==='postgres')?('public'):(''))),
-            $table
-        );    
+        if( $this->sql->engine === 'mysql' )
+        {
+            return $this->fetch_col(
+                'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
+                'def',
+                $this->sql->database,
+                $table
+            );   
+        }
+        else if( $this->sql->engine === 'postgres' )
+        {
+            return $this->fetch_col(
+                'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
+                $this->sql->database,
+                'public',
+                $table
+            );   
+        }
+        else if( $this->sql->engine === 'sqlite' )
+        {
+            $pragma = $this->fetch_all('PRAGMA table_info('.$this->quote($table).');');
+            $cols = [];
+            foreach($pragma as $pragma__value)
+            {
+                $cols[] = $pragma__value['name'];
+            }
+            return $cols;
+        } 
     }
 
     public function has_column($table, $column)
     {
-        $count = $this->fetch_var(
-            'SELECT COUNT(*) FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? AND column_name = ?',
-            (($this->sql->engine==='mysql')?('def'):(($this->sql->engine==='postgres')?($this->sql->database):(''))),
-            (($this->sql->engine==='mysql')?($this->sql->database):(($this->sql->engine==='postgres')?('public'):(''))),
-            $table,
-            $column
-        );
-        return $count > 0;
+        return in_array($column, $this->get_columns($table));
     }
 
     public function get_datatype($table, $column)
     {
-        return $this->fetch_var(
-            'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
-            (($this->sql->engine==='mysql')?('def'):(($this->sql->engine==='postgres')?($this->sql->database):(''))),
-            (($this->sql->engine==='mysql')?($this->sql->database):(($this->sql->engine==='postgres')?('public'):(''))),
-            $table,
-            $column
-        );
+        if( $this->sql->engine === 'mysql' )
+        {
+            return $this->fetch_var(
+                'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
+                'def',
+                $this->sql->database,
+                $table,
+                $column
+            );
+        }
+        else if( $this->sql->engine === 'postgres' )
+        {
+            return $this->fetch_var(
+                'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
+                $this->sql->database,
+                'public',
+                $table,
+                $column
+            );
+        }
+        else if( $this->sql->engine === 'sqlite' )
+        {
+            $pragma = $this->fetch_all('PRAGMA table_info('.$this->quote($table).');');
+            foreach($pragma as $pragma__value)
+            {
+                if( $pragma__value['name'] === $column )
+                {
+                    return $pragma__value['type'];
+                }
+            }
+            return null;
+        } 
     }
 
     public function get_primary_key($table)
@@ -730,6 +878,18 @@ class dbhelper
             if( $this->sql->engine === 'postgres' )
             {
                 return $this->fetch_var('SELECT pg_attribute.attname FROM pg_index JOIN pg_attribute ON pg_attribute.attrelid = pg_index.indrelid AND pg_attribute.attnum = ANY(pg_index.indkey) WHERE pg_index.indrelid = \''.$table.'\'::regclass AND pg_index.indisprimary');
+            }
+            if( $this->sql->engine === 'sqlite' )
+            {
+                $pragma = $this->fetch_all('PRAGMA table_info('.$this->quote($table).');');
+                foreach($pragma as $pragma__value)
+                {
+                    if( $pragma__value['pk'] == 1 )
+                    {
+                        return $pragma__value['name'];
+                    }
+                }
+                return null;
             }
         }
         catch(\Exception $e)
@@ -1434,6 +1594,10 @@ class dbhelper
         {
             return '"'.$name.'"';
         }
+        if( $this->sql->engine === 'sqlite' )
+        {
+            return '"'.$name.'"';
+        }
     }
 
     public function uuid()
@@ -1450,6 +1614,10 @@ class dbhelper
         if( $this->sql->engine === 'postgres' )
         {
             return 'uuid_in(md5(random()::text || now()::text)::cstring)';
+        }
+        if( $this->sql->engine === 'sqlite' )
+        {
+            return "substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12) from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)";
         }
     }
 

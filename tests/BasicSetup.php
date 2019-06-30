@@ -31,15 +31,13 @@ trait BasicSetup
     function setUp()
     {
         self::$db->clear(); // if something failed
-        self::$db->query('
-            CREATE TABLE test
-            (
-              id SERIAL PRIMARY KEY,
-              col1 varchar(255),
-              col2 varchar(255),
-              col3 varchar(255)
-            )
-        ');
+        self::$db->create_table('test', [
+            'id' =>
+                (self::$credentials->engine === 'sqlite' ? 'INTEGER' : 'SERIAL') . ' PRIMARY KEY',
+            'col1' => 'varchar(255)',
+            'col2' => 'varchar(255)',
+            'col3' => 'varchar(255)'
+        ]);
     }
 
     function tearDown()
