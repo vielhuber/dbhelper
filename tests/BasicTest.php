@@ -316,7 +316,9 @@ trait BasicTest
             'FOREIGN KEY(col3)' => 'REFERENCES test(id)'
         ]);
         $this->assertEquals(self::$db->get_foreign_keys('test'), []);
+        $this->assertEquals(self::$db->is_foreign_key('test', 'col1'), false);
         $this->assertEquals(self::$db->get_foreign_keys('test_foreign'), ['col3' => ['test', 'id']]);
+        $this->assertEquals(self::$db->is_foreign_key('test_foreign', 'col3'), true);
     }
 
     function test__has_column()

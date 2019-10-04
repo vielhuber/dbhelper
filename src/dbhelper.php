@@ -759,6 +759,11 @@ class dbhelper
         }
     }
 
+    public function is_foreign_key($table, $column)
+    {
+        return array_key_exists($column, $this->get_foreign_keys($table));
+    }
+
     public function has_column($table, $column)
     {
         return in_array($column, $this->get_columns($table));

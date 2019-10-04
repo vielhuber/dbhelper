@@ -94,6 +94,11 @@ function db_get_foreign_keys($table)
     global $db;
     return $db->get_foreign_keys($table);
 }
+function db_is_foreign_key($table, $column)
+{
+    global $db;
+    return $db->db_is_foreign_key($table, $column);
+}
 function db_has_column($table, $column)
 {
     global $db;

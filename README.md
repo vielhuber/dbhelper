@@ -102,6 +102,7 @@ $db->get_datatype('tablename', 'col1') // varchar
 $db->get_primary_key('tablename') // id
 $db->uuid() // generate uuid (v4) from inside the database
 $db->get_foreign_keys('tablename') // [['user_id' => ['users','id'], ...]
+$db->is_foreign_key('tablename', 'user_id') // true
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [
