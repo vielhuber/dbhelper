@@ -1,4 +1,5 @@
 <?php
+
 namespace vielhuber\dbhelper;
 
 use PDO;
@@ -17,31 +18,23 @@ class dbhelper
 
     public function connect($driver, $engine = null, $host = null, $username = null, $password = null, $database = null, $port = 3306)
     {
-        switch ($driver)
-        {
+        switch ($driver) {
             case 'pdo':
-                if ($engine === 'mysql')
-                {
-                    $sql = new PDO('mysql:host=' . $host . ';port=' . $port . (($database !== null)?(';dbname=' . $database):('')), $username, $password, [
+                if ($engine === 'mysql') {
+                    $sql = new PDO('mysql:host=' . $host . ';port=' . $port . (($database !== null) ? (';dbname=' . $database) : ('')), $username, $password, [
                         PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
                         PDO::ATTR_EMULATE_PREPARES => false,
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
                     ]);
-                }
-                else if ($engine === 'postgres')
-                {
-                    $sql = new PDO('pgsql:host=' . $host . ';port=' . $port . (($database !== null)?(';dbname=' . $database):('')), $username, $password);
-                    $sql->query('SET NAMES UTF8');                    
-                }
-                else if ($engine === 'sqlite')
-                {
+                } else if ($engine === 'postgres') {
+                    $sql = new PDO('pgsql:host=' . $host . ';port=' . $port . (($database !== null) ? (';dbname=' . $database) : ('')), $username, $password);
+                    $sql->query('SET NAMES UTF8');
+                } else if ($engine === 'sqlite') {
                     $sql = new PDO('sqlite:' . $host, null, null, [
                         PDO::ATTR_EMULATE_PREPARES => false,
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
-                    ]);               
-                }
-                else
-                {
+                    ]);
+                } else {
                     throw new \Exception('missing engine');
                 }
                 $sql->database = $database;
@@ -50,8 +43,7 @@ class dbhelper
             case 'mysqli':
                 $sql = new mysqli($host, $username, $password, $database, $port);
                 mysqli_set_charset($sql, "utf8");
-                if ($sql->connect_errno)
-                {
+                if ($sql->connect_errno) {
                     die('SQL Connection failed: ' . $sql->connect_error);
                 }
                 $sql->database = $database;
@@ -65,7 +57,6 @@ class dbhelper
                 $sql = $wpdb;
                 $sql->database = $wpdb->dbname;
                 break;
-
         }
         $sql->driver = $driver;
         $sql->engine = $engine;
@@ -78,31 +69,24 @@ class dbhelper
 
     public function create_database($database)
     {
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
             case 'pdo':
-                if ($this->sql->engine === 'mysql')
-                {
-                    $this->sql->exec('CREATE DATABASE IF NOT EXISTS '.$database.';');
-                }
-                else if ($this->sql->engine === 'postgres')
-                {
-                    $this->sql->exec('CREATE DATABASE '.$database.';');
-                }
-                else if ($this->sql->engine === 'sqlite')
-                {
+                if ($this->sql->engine === 'mysql') {
+                    $this->sql->exec('CREATE DATABASE IF NOT EXISTS ' . $database . ';');
+                } else if ($this->sql->engine === 'postgres') {
+                    $this->sql->exec('CREATE DATABASE ' . $database . ';');
+                } else if ($this->sql->engine === 'sqlite') {
                     @touch($database);
                 }
                 break;
 
             case 'mysqli':
-                
+
                 break;
 
             case 'wordpress':
                 // TODO
                 break;
-
         }
     }
 
@@ -116,27 +100,21 @@ class dbhelper
 
     public function delete_database($database)
     {
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
             case 'pdo':
-                if ($this->sql->engine === 'mysql')
-                {
-                    $this->sql->exec('DROP DATABASE '.$database.';');
-                }
-                else if ($this->sql->engine === 'postgres')
-                {
-                    $this->sql->exec('DROP DATABASE '.$database.';');
-                }
-                else if ($this->sql->engine === 'sqlite')
-                {
+                if ($this->sql->engine === 'mysql') {
+                    $this->sql->exec('DROP DATABASE ' . $database . ';');
+                } else if ($this->sql->engine === 'postgres') {
+                    $this->sql->exec('DROP DATABASE ' . $database . ';');
+                } else if ($this->sql->engine === 'sqlite') {
                     @unlink($database);
                 }
                 break;
-            case 'mysqli':                
+            case 'mysqli':
                 break;
             case 'wordpress':
                 break;
-        }        
+        }
     }
 
     public function disconnect_with_delete()
@@ -149,16 +127,13 @@ class dbhelper
         $database = $this->sql->database;
         $port = $this->sql->port;
         $this->disconnect();
-        if( $driver === 'pdo' && $engine === 'sqlite' )
-        {
-            $this->sql = (object)[];
+        if ($driver === 'pdo' && $engine === 'sqlite') {
+            $this->sql = (object) [];
             $this->sql->driver = $driver;
             $this->sql->engine = $engine;
             $this->sql->host = $host;
             $this->delete_database($host);
-        }
-        else
-        {
+        } else {
             $this->connect($driver, $engine, $host, $username, $password, null, $port);
             $this->delete_database($database);
             $this->disconnect();
@@ -167,8 +142,7 @@ class dbhelper
 
     public function disconnect()
     {
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
                 $this->sql = null;
@@ -181,7 +155,6 @@ class dbhelper
             case 'wordpress':
                 // TODO
                 break;
-
         }
     }
 
@@ -193,14 +166,12 @@ class dbhelper
         $params = array_values($params);
         list($query, $params) = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
-                if ($stmt->errorCode() != 0)
-                {
+                if ($stmt->errorCode() != 0) {
                     $errors = $stmt->errorInfo();
                     throw new \Exception($errors[2]);
                 }
@@ -210,27 +181,21 @@ class dbhelper
             case 'mysqli':
                 // do not use mysqlnd
                 $result = $this->sql->query($query);
-                while ($row = $result->fetch_assoc())
-                {
+                while ($row = $result->fetch_assoc()) {
                     $data[] = $row;
                 }
                 break;
 
             case 'wordpress':
-                if( !empty($params) )
-                {
+                if (!empty($params)) {
                     $data = $this->sql->get_results($this->sql->prepare($query, $params));
-                }
-                else
-                {
+                } else {
                     $data = $this->sql->get_results($query);
                 }
-                if( $this->sql->last_error )
-                {
+                if ($this->sql->last_error) {
                     throw new \Exception($this->sql->last_error);
                 }
                 break;
-
         }
 
         return $data;
@@ -244,14 +209,12 @@ class dbhelper
         $params = array_values($params);
         list($query, $params) = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
-                if ($stmt->errorCode() != 0)
-                {
+                if ($stmt->errorCode() != 0) {
                     $errors = $stmt->errorInfo();
                     throw new \Exception($errors[2]);
                 }
@@ -263,20 +226,15 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) )
-                {
+                if (!empty($params)) {
                     $data = $this->sql->get_row($this->sql->prepare($query, $params));
-                }
-                else
-                {
+                } else {
                     $data = $this->sql->get_row($query);
                 }
-                if( $this->sql->last_error )
-                {
+                if ($this->sql->last_error) {
                     throw new \Exception($this->sql->last_error);
                 }
                 break;
-
         }
 
         return $data;
@@ -290,24 +248,20 @@ class dbhelper
         $params = array_values($params);
         list($query, $params) = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
-                if ($stmt->errorCode() != 0)
-                {
+                if ($stmt->errorCode() != 0) {
                     $errors = $stmt->errorInfo();
                     throw new \Exception($errors[2]);
                 }
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if (!empty($data))
-                {
+                if (!empty($data)) {
                     $data_tmp = [];
-                    foreach ($data as $dat)
-                    {
-                        $data_tmp[] = $dat[ array_keys($dat)[0] ];
+                    foreach ($data as $dat) {
+                        $data_tmp[] = $dat[array_keys($dat)[0]];
                     }
                     $data = $data_tmp;
                 }
@@ -318,20 +272,15 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) )
-                {
+                if (!empty($params)) {
                     $data = $this->sql->get_col($this->sql->prepare($query, $params));
-                }
-                else
-                {
+                } else {
                     $data = $this->sql->get_col($query);
                 }
-                if( $this->sql->last_error )
-                {
+                if ($this->sql->last_error) {
                     throw new \Exception($this->sql->last_error);
                 }
                 break;
-
         }
 
         return $data;
@@ -345,51 +294,42 @@ class dbhelper
         $params = array_values($params);
         list($query, $params) = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
-                if ($stmt->errorCode() != 0)
-                {
+                if ($stmt->errorCode() != 0) {
                     $errors = $stmt->errorInfo();
                     throw new \Exception($errors[2]);
                 }
                 $data = $stmt->fetchObject();
-                if (empty($data))
-                {
+                if (empty($data)) {
                     return null;
                 }
-                $data = (Array)$data;
+                $data = (array) $data;
                 $data = current($data);
                 break;
 
             case 'mysqli':
                 $data = $this->sql->query($query)->fetch_object();
-                if (empty($data))
-                {
+                if (empty($data)) {
                     return null;
                 }
-                $data = (Array)$data;
+                $data = (array) $data;
                 $data = current($data);
                 break;
 
             case 'wordpress':
-                if( !empty($params) )
-                {
+                if (!empty($params)) {
                     $data = $this->sql->get_var($this->sql->prepare($query, $params));
-                }
-                else
-                {
+                } else {
                     $data = $this->sql->get_var($query);
                 }
-                if( $this->sql->last_error )
-                {
+                if ($this->sql->last_error) {
                     throw new \Exception($this->sql->last_error);
                 }
                 break;
-
         }
 
         return $data;
@@ -403,34 +343,28 @@ class dbhelper
         $params = array_values($params);
         list($query, $params) = $this->preparse_query($query, $params);
 
-        if( isset($this->config['auto_inject']) && $this->config['auto_inject'] === true )
-        {
+        if (isset($this->config['auto_inject']) && $this->config['auto_inject'] === true) {
             $query = $this->handle_logging($query, $params);
         }
 
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
                 // in general we use prepare/execute instead of exec or query
                 // this works certainly in all cases, EXCEPT when doing something like CREATE TABLE, CREATE TRIGGER, DROP TABLE, DROP TRIGGER
                 // that causes the error "Cannot execute queries while other unbuffered queries are active"
                 // therefore we switch in those cases to exec
-                if( stripos($query,'CREATE') === 0 || stripos($query,'DROP') === 0 )
-                {
+                if (stripos($query, 'CREATE') === 0 || stripos($query, 'DROP') === 0) {
                     $this->sql->exec($query);
-                }
-                else
-                {
+                } else {
                     $stmt = $this->sql->prepare($query);
-                    $stmt->execute($params);                
-                    if ($stmt->errorCode() != 0)
-                    {
+                    $stmt->execute($params);
+                    if ($stmt->errorCode() != 0) {
                         $errors = $stmt->errorInfo();
                         throw new \Exception($errors[2]);
                     }
-                    return $stmt->rowCount();    
-                }           
+                    return $stmt->rowCount();
+                }
                 break;
 
             case 'mysqli':
@@ -438,67 +372,52 @@ class dbhelper
                 break;
 
             case 'wordpress':
-                if( !empty($params) )
-                {
+                if (!empty($params)) {
                     $data = $this->sql->query($this->sql->prepare($query, $params));
-                }
-                else
-                {
+                } else {
                     $data = $this->sql->query($query);
                 }
-                if( $this->sql->last_error )
-                {
+                if ($this->sql->last_error) {
                     throw new \Exception($this->sql->last_error);
                 }
                 break;
-
         }
-
     }
 
     public function insert($table, $data)
     {
-        if( !isset($data[0]) && !is_array(array_values($data)[0]) )
-        {
+        if (!isset($data[0]) && !is_array(array_values($data)[0])) {
             $data = [$data];
         }
         $query = '';
         $query .= 'INSERT INTO ';
         $query .= $this->quote($table);
         $query .= '(';
-        foreach($data[0] as $data__key=>$data__value)
-        {
+        foreach ($data[0] as $data__key => $data__value) {
             $query .= $this->quote($data__key);
-            if( array_keys($data[0])[count(array_keys($data[0]))-1] !== $data__key )
-            {
+            if (array_keys($data[0])[count(array_keys($data[0])) - 1] !== $data__key) {
                 $query .= ',';
             }
         }
         $query .= ') ';
         $query .= 'VALUES ';
-        foreach($data as $data__key=>$data__value)
-        {
+        foreach ($data as $data__key => $data__value) {
             $query .= '(';
-                $query .= str_repeat('?,',count($data__value)-1).'?';
+            $query .= str_repeat('?,', count($data__value) - 1) . '?';
             $query .= ')';
-            if( array_keys($data)[count(array_keys($data))-1] !== $data__key )
-            {
+            if (array_keys($data)[count(array_keys($data)) - 1] !== $data__key) {
                 $query .= ',';
             }
         }
         $args = [];
         $args[] = $query;
-        foreach($data as $data__key=>$data__value)
-        {
-            foreach($data__value as $data__value__key=>$data__value__value)
-            {
+        foreach ($data as $data__key => $data__value) {
+            foreach ($data__value as $data__value__key => $data__value__value) {
                 // because pdo can't insert true/false values so easily, convert them to 1/0
-                if($data__value__value === true)
-                {
+                if ($data__value__value === true) {
                     $data__value__value = 1;
                 }
-                if($data__value__value === false)
-                {
+                if ($data__value__value === false) {
                     $data__value__value = 0;
                 }
                 $args[] = $data__value__value;
@@ -509,61 +428,45 @@ class dbhelper
         // mysql returns the last inserted id inside the current session, obviously ignoring triggers
         // on postgres we cannot use LASTVAL(), because it returns the last id of possibly inserted rows caused by triggers
         // see: https://stackoverflow.com/questions/51558021/mysql-postgres-last-insert-id-lastval-different-behaviour
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             return $this->last_insert_id();
         }
-        if( $this->sql->engine === 'postgres' )
-        {
+        if ($this->sql->engine === 'postgres') {
             return $this->last_insert_id($table, $this->get_primary_key($table));
         }
-        if( $this->sql->engine === 'sqlite' )
-        {
+        if ($this->sql->engine === 'sqlite') {
             return $this->last_insert_id();
-        }  
+        }
     }
 
     public function last_insert_id($table = null, $column = null)
     {
         $last_insert_id = null;
-        switch ($this->sql->driver)
-        {
+        switch ($this->sql->driver) {
 
             case 'pdo':
-                if ($this->sql->engine == 'mysql')
-                {
+                if ($this->sql->engine == 'mysql') {
                     try {
                         $last_insert_id = $this->fetch_var("SELECT LAST_INSERT_ID();");
-                    }
-                    catch(\Exception $e)
-                    {   
+                    } catch (\Exception $e) {
                         $last_insert_id = null;
                     }
                 }
-                if ($this->sql->engine == 'postgres')
-                {
+                if ($this->sql->engine == 'postgres') {
                     try {
-                        if( $table === null || $column === null )
-                        {
+                        if ($table === null || $column === null) {
                             $last_insert_id = $this->fetch_var("SELECT LASTVAL();");
+                        } else {
+                            $last_insert_id = $this->fetch_var("SELECT CURRVAL(pg_get_serial_sequence('" . $table . "','" . $column . "'));");
                         }
-                        else
-                        {
-                            $last_insert_id = $this->fetch_var("SELECT CURRVAL(pg_get_serial_sequence('".$table."','".$column."'));");
-                        }
-                    }
-                    catch(\Exception $e)
-                    {   
+                    } catch (\Exception $e) {
                         $last_insert_id = null;
                     }
                 }
-                if ($this->sql->engine == 'sqlite')
-                {
+                if ($this->sql->engine == 'sqlite') {
                     try {
                         $last_insert_id = $this->fetch_var("SELECT last_insert_rowid();");
-                    }
-                    catch(\Exception $e)
-                    {   
+                    } catch (\Exception $e) {
                         $last_insert_id = null;
                     }
                 }
@@ -576,7 +479,6 @@ class dbhelper
             case 'wordpress':
                 $last_insert_id = $this->fetch_var("SELECT LAST_INSERT_ID();");
                 break;
-
         }
 
         return $last_insert_id;
@@ -584,59 +486,48 @@ class dbhelper
 
     public function update($table, $data, $condition = null)
     {
-        if( isset($data[0]) && is_array($data[0]) )
-        {
+        if (isset($data[0]) && is_array($data[0])) {
             return $this->update_batch($table, $data);
         }
         $query = "";
         $query .= "UPDATE ";
         $query .= $this->quote($table);
         $query .= " SET ";
-        foreach ($data as $key => $value)
-        {
+        foreach ($data as $key => $value) {
             $query .= $this->quote($key);
             $query .= " = ";
             $query .= "?";
             end($data);
-            if ($key !== key($data))
-            {
+            if ($key !== key($data)) {
                 $query .= ', ';
             }
         }
         $query .= " WHERE ";
-        foreach ($condition as $key => $value)
-        {
+        foreach ($condition as $key => $value) {
             $query .= $this->quote($key);
             $query .= " = ";
             $query .= "? ";
             end($condition);
-            if ($key !== key($condition))
-            {
+            if ($key !== key($condition)) {
                 $query .= ' AND ';
             }
         }
         $args = [];
         $args[] = $query;
-        foreach ($data as $d)
-        {
-            if ($d === true)
-            {
+        foreach ($data as $d) {
+            if ($d === true) {
                 $d = 1;
             }
-            if ($d === false)
-            {
+            if ($d === false) {
                 $d = 0;
             }
             $args[] = $d;
         }
-        foreach ($condition as $c)
-        {
-            if ($c === true)
-            {
+        foreach ($condition as $c) {
+            if ($c === true) {
                 $c = 1;
             }
-            if ($c === false)
-            {
+            if ($c === false) {
                 $c = 0;
             }
             $args[] = $c;
@@ -646,8 +537,7 @@ class dbhelper
 
     public function delete($table, $conditions)
     {
-        if( !isset($conditions[0]) && !is_array(array_values($conditions)[0]) )
-        {
+        if (!isset($conditions[0]) && !is_array(array_values($conditions)[0])) {
             $conditions = [$conditions];
         }
         $query = '';
@@ -655,38 +545,30 @@ class dbhelper
         $query .= $this->quote($table);
         $query .= ' WHERE ';
         $query .= '(';
-        foreach($conditions as $conditions__key=>$conditions__value)
-        {
+        foreach ($conditions as $conditions__key => $conditions__value) {
             $query .= '(';
-            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
-            {
+            foreach ($conditions__value as $conditions__value__key => $conditions__value__value) {
                 $query .= $this->quote($conditions__value__key);
                 $query .= ' = ';
                 $query .= '?';
-                if( array_keys($conditions__value)[count(array_keys($conditions__value))-1] !== $conditions__value__key )
-                {
+                if (array_keys($conditions__value)[count(array_keys($conditions__value)) - 1] !== $conditions__value__key) {
                     $query .= ' AND ';
                 }
             }
             $query .= ')';
-            if( array_keys($conditions)[count(array_keys($conditions))-1] !== $conditions__key )
-            {
+            if (array_keys($conditions)[count(array_keys($conditions)) - 1] !== $conditions__key) {
                 $query .= ' OR ';
             }
         }
         $query .= ')';
         $args = [];
         $args[] = $query;
-        foreach($conditions as $conditions__key=>$conditions__value)
-        {
-            foreach($conditions__value as $conditions__value__key=>$conditions__value__value)
-            {
-                if($conditions__value__value === true)
-                {
+        foreach ($conditions as $conditions__key => $conditions__value) {
+            foreach ($conditions__value as $conditions__value__key => $conditions__value__value) {
+                if ($conditions__value__value === true) {
                     $conditions__value__value = 1;
                 }
-                if($conditions__value__value === false)
-                {
+                if ($conditions__value__value === false) {
                     $conditions__value__value = 0;
                 }
                 $args[] = $conditions__value__value;
@@ -697,28 +579,20 @@ class dbhelper
 
     public function clear($table = null)
     {
-        if( $table === null )
-        {
-            if( $this->sql->engine === 'mysql' )
-            {
-                $this->query('SET FOREIGN_KEY_CHECKS = 0');        
+        if ($table === null) {
+            if ($this->sql->engine === 'mysql') {
+                $this->query('SET FOREIGN_KEY_CHECKS = 0');
                 $tables = $this->fetch_col('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', $this->sql->database);
-                if( !empty($tables) )
-                {
-                    foreach($tables as $tables__value)
-                    {
-                        $this->query('DROP TABLE '.$tables__value);
+                if (!empty($tables)) {
+                    foreach ($tables as $tables__value) {
+                        $this->query('DROP TABLE ' . $tables__value);
                     }
                 }
                 $this->query('SET FOREIGN_KEY_CHECKS = 1');
-            }
-            else if( $this->sql->engine === 'postgres' )
-            {
+            } else if ($this->sql->engine === 'postgres') {
                 $this->query('DROP SCHEMA public CASCADE');
                 $this->query('CREATE SCHEMA public');
-            }
-            else if( $this->sql->engine === 'sqlite' )
-            {
+            } else if ($this->sql->engine === 'sqlite') {
                 $db_driver = $this->sql->driver;
                 $db_engine = $this->sql->engine;
                 $db_file = $this->sql->host;
@@ -726,37 +600,29 @@ class dbhelper
                 unlink($db_file);
                 $this->connect($db_driver, $db_engine, $db_file);
             }
-        }
-        else
-        {
-            if( $this->sql->engine === 'mysql' )
-            {
-                $this->query('TRUNCATE TABLE '.$table);
-            }
-            else if( $this->sql->engine === 'postgres' )
-            {
-                $this->query('TRUNCATE TABLE '.$table);
-            }
-            else if( $this->sql->engine === 'sqlite' )
-            {
-                $this->query('DELETE FROM '.$table);
+        } else {
+            if ($this->sql->engine === 'mysql') {
+                $this->query('TRUNCATE TABLE ' . $table);
+            } else if ($this->sql->engine === 'postgres') {
+                $this->query('TRUNCATE TABLE ' . $table);
+            } else if ($this->sql->engine === 'sqlite') {
+                $this->query('DELETE FROM ' . $table);
             }
         }
     }
 
     public function delete_table($table)
     {
-        $this->query('DROP TABLE '.$table);
+        $this->query('DROP TABLE ' . $table);
     }
 
     public function create_table($table, $cols)
     {
         $query = '';
         $query .= 'CREATE TABLE IF NOT EXISTS ';
-        $query .= $table. ' ';
+        $query .= $table . ' ';
         $query .= '(';
-        foreach($cols as $cols__key=>$cols__value)
-        {
+        foreach ($cols as $cols__key => $cols__value) {
             $query .= $cols__key;
             $query .= ' ';
             $query .= $cols__value;
@@ -769,24 +635,19 @@ class dbhelper
 
     public function get_tables()
     {
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             return $this->fetch_col(
                 'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
                 'def',
                 $this->sql->database
             );
-        }
-        else if( $this->sql->engine === 'postgres' )
-        {
+        } else if ($this->sql->engine === 'postgres') {
             return $this->fetch_col(
                 'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
                 $this->sql->database,
                 'public'
             );
-        }
-        else if( $this->sql->engine === 'sqlite' )
-        {
+        } else if ($this->sql->engine === 'sqlite') {
             return $this->fetch_col(
                 'SELECT name FROM sqlite_master WHERE type = ?',
                 'table'
@@ -796,34 +657,106 @@ class dbhelper
 
     public function get_columns($table)
     {
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             return $this->fetch_col(
                 'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
                 'def',
                 $this->sql->database,
                 $table
-            );   
-        }
-        else if( $this->sql->engine === 'postgres' )
-        {
+            );
+        } else if ($this->sql->engine === 'postgres') {
             return $this->fetch_col(
                 'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
                 $this->sql->database,
                 'public',
                 $table
-            );   
-        }
-        else if( $this->sql->engine === 'sqlite' )
-        {
-            $pragma = $this->fetch_all('PRAGMA table_info('.$this->quote($table).');');
+            );
+        } else if ($this->sql->engine === 'sqlite') {
+            $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
             $cols = [];
-            foreach($pragma as $pragma__value)
-            {
+            foreach ($pragma as $pragma__value) {
                 $cols[] = $pragma__value['name'];
             }
             return $cols;
-        } 
+        }
+    }
+
+    public function get_foreign_keys($table)
+    {
+        if ($this->sql->engine === 'mysql') {
+            $return = [];
+            $cols = $this->fetch_all(
+                '
+                    SELECT
+                        kcu.column_name AS column_name,
+                        kcu.referenced_table_name as foreign_table_name,
+                        kcu.referenced_column_name as foreign_column_name
+                    FROM 
+                        information_schema.table_constraints AS tc 
+                        JOIN information_schema.key_column_usage AS kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                        AND tc.table_schema = kcu.table_schema
+                    WHERE
+                        tc.constraint_type = ? AND
+                        tc.table_schema = ? AND
+                        tc.table_name = ?
+                ',
+                'FOREIGN KEY',
+                $this->sql->database,
+                $table
+            );
+            foreach ($cols as $cols__value) {
+                $return[$cols__value['column_name']] = [
+                    $cols__value['foreign_table_name'],
+                    $cols__value['foreign_column_name']
+                ];
+            }
+            return $return;
+        } else if ($this->sql->engine === 'postgres') {
+            $return = [];
+            $cols = $this->fetch_all(
+                '
+                    SELECT
+                        kcu.column_name AS column_name, 
+                        ccu.table_name AS foreign_table_name,
+                        ccu.column_name AS foreign_column_name 
+                    FROM 
+                        information_schema.table_constraints AS tc 
+                        JOIN information_schema.key_column_usage AS kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                        AND tc.table_schema = kcu.table_schema
+                        JOIN information_schema.constraint_column_usage AS ccu
+                        ON ccu.constraint_name = tc.constraint_name
+                        AND ccu.table_schema = tc.table_schema
+                    WHERE
+                        tc.constraint_type = ? AND
+                        tc.table_catalog = ? AND
+                        tc.table_schema = ? AND
+                        tc.table_name = ?
+                ',
+                'FOREIGN KEY',
+                $this->sql->database,
+                'public',
+                $table
+            );
+            foreach ($cols as $cols__value) {
+                $return[$cols__value['column_name']] = [
+                    $cols__value['foreign_table_name'],
+                    $cols__value['foreign_column_name']
+                ];
+            }
+            return $return;
+        } else if ($this->sql->engine === 'sqlite') {
+            $pragma = $this->fetch_all('PRAGMA foreign_key_list(' . $this->quote($table) . ');');
+            $return = [];
+            foreach ($pragma as $pragma__value) {
+                $return[$pragma__value['from']] = [
+                    $pragma__value['table'],
+                    $pragma__value['to'],
+                ];
+            }
+            return $return;
+        }
     }
 
     public function has_column($table, $column)
@@ -833,8 +766,7 @@ class dbhelper
 
     public function get_datatype($table, $column)
     {
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             return $this->fetch_var(
                 'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
                 'def',
@@ -842,9 +774,7 @@ class dbhelper
                 $table,
                 $column
             );
-        }
-        else if( $this->sql->engine === 'postgres' )
-        {
+        } else if ($this->sql->engine === 'postgres') {
             return $this->fetch_var(
                 'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
                 $this->sql->database,
@@ -852,50 +782,38 @@ class dbhelper
                 $table,
                 $column
             );
-        }
-        else if( $this->sql->engine === 'sqlite' )
-        {
-            $pragma = $this->fetch_all('PRAGMA table_info('.$this->quote($table).');');
-            foreach($pragma as $pragma__value)
-            {
-                if( $pragma__value['name'] === $column )
-                {
+        } else if ($this->sql->engine === 'sqlite') {
+            $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
+            foreach ($pragma as $pragma__value) {
+                if ($pragma__value['name'] === $column) {
                     return $pragma__value['type'];
                 }
             }
             return null;
-        } 
+        }
     }
 
     public function get_primary_key($table)
     {
-        try
-        {
-            if( $this->sql->engine === 'mysql' )
-            {
-                return ((object)$this->fetch_row('SHOW KEYS FROM '.$this->quote($table).' WHERE Key_name = ?', 'PRIMARY'))->Column_name;
+        try {
+            if ($this->sql->engine === 'mysql') {
+                return ((object) $this->fetch_row('SHOW KEYS FROM ' . $this->quote($table) . ' WHERE Key_name = ?', 'PRIMARY'))->Column_name;
             }
-            if( $this->sql->engine === 'postgres' )
-            {
-                return $this->fetch_var('SELECT pg_attribute.attname FROM pg_index JOIN pg_attribute ON pg_attribute.attrelid = pg_index.indrelid AND pg_attribute.attnum = ANY(pg_index.indkey) WHERE pg_index.indrelid = \''.$table.'\'::regclass AND pg_index.indisprimary');
+            if ($this->sql->engine === 'postgres') {
+                return $this->fetch_var('SELECT pg_attribute.attname FROM pg_index JOIN pg_attribute ON pg_attribute.attrelid = pg_index.indrelid AND pg_attribute.attnum = ANY(pg_index.indkey) WHERE pg_index.indrelid = \'' . $table . '\'::regclass AND pg_index.indisprimary');
             }
-            if( $this->sql->engine === 'sqlite' )
-            {
-                $pragma = $this->fetch_all('PRAGMA table_info('.$this->quote($table).');');
-                foreach($pragma as $pragma__value)
-                {
-                    if( $pragma__value['pk'] == 1 )
-                    {
+            if ($this->sql->engine === 'sqlite') {
+                $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
+                foreach ($pragma as $pragma__value) {
+                    if ($pragma__value['pk'] == 1) {
                         return $pragma__value['name'];
                     }
                 }
                 return null;
             }
-        }
-        catch(\Exception $e)
-        {
+        } catch (\Exception $e) {
             return null;
-        }        
+        }
     }
 
     public function enable_auto_inject()
@@ -906,35 +824,31 @@ class dbhelper
     public function setup_logging()
     {
 
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             $this->setup_logging_create_table_mysql();
             $this->setup_logging_add_column();
             $this->setup_logging_create_triggers_mysql();
         }
-        if( $this->sql->engine === 'postgres' )
-        {
+        if ($this->sql->engine === 'postgres') {
             $this->setup_logging_create_table_postgres();
             $this->setup_logging_add_column();
             $this->setup_logging_create_triggers_postgres();
         }
-        
-        $this->setup_logging_delete_older();
 
+        $this->setup_logging_delete_older();
     }
 
     private function setup_logging_delete_older()
     {
-        if( isset($this->config['delete_older']) && is_numeric($this->config['delete_older']) )
-        {
-            $this->query('DELETE FROM '.$this->config['logging_table'].' WHERE updated_at < ?', date('Y-m-d',strtotime('now - '.$this->config['delete_older'].' months')));
+        if (isset($this->config['delete_older']) && is_numeric($this->config['delete_older'])) {
+            $this->query('DELETE FROM ' . $this->config['logging_table'] . ' WHERE updated_at < ?', date('Y-m-d', strtotime('now - ' . $this->config['delete_older'] . ' months')));
         }
     }
 
     private function setup_logging_create_table_mysql()
     {
         $this->query('
-            CREATE TABLE IF NOT EXISTS '.$this->config['logging_table'].' (
+            CREATE TABLE IF NOT EXISTS ' . $this->config['logging_table'] . ' (
               id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
               log_event varchar(10) NOT NULL,
               log_table varchar(100) NOT NULL,
@@ -951,7 +865,7 @@ class dbhelper
     private function setup_logging_create_table_postgres()
     {
         $this->query('
-            CREATE TABLE IF NOT EXISTS '.$this->config['logging_table'].' (
+            CREATE TABLE IF NOT EXISTS ' . $this->config['logging_table'] . ' (
               id SERIAL NOT NULL PRIMARY KEY,
               log_event varchar(10) NOT NULL,
               log_table varchar(100) NOT NULL,
@@ -972,75 +886,63 @@ class dbhelper
             END;
             $$ language \'plpgsql\';
         ');
-        $this->query('CREATE TRIGGER auto_update_updated_at_column_on_insert BEFORE INSERT ON '.$this->config['logging_table'].' FOR EACH ROW EXECUTE PROCEDURE auto_update_updated_at_column();');
-        $this->query('CREATE TRIGGER auto_update_updated_at_column_on_update BEFORE UPDATE ON '.$this->config['logging_table'].' FOR EACH ROW EXECUTE PROCEDURE auto_update_updated_at_column();');
+        $this->query('CREATE TRIGGER auto_update_updated_at_column_on_insert BEFORE INSERT ON ' . $this->config['logging_table'] . ' FOR EACH ROW EXECUTE PROCEDURE auto_update_updated_at_column();');
+        $this->query('CREATE TRIGGER auto_update_updated_at_column_on_update BEFORE UPDATE ON ' . $this->config['logging_table'] . ' FOR EACH ROW EXECUTE PROCEDURE auto_update_updated_at_column();');
     }
 
     private function setup_logging_add_column()
     {
-        foreach( $this->get_tables() as $table__value )
-        {
-            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
-            {
+        foreach ($this->get_tables() as $table__value) {
+            if (isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables'])) {
                 continue;
             }
-            if( $table__value === $this->config['logging_table'] )
-            {
+            if ($table__value === $this->config['logging_table']) {
                 continue;
             }
-            if( !$this->has_column($table__value, 'updated_by') )
-            {
-                $this->query('ALTER TABLE '.$table__value.' ADD COLUMN updated_by varchar(50)');
+            if (!$this->has_column($table__value, 'updated_by')) {
+                $this->query('ALTER TABLE ' . $table__value . ' ADD COLUMN updated_by varchar(50)');
             }
         }
     }
 
     public function disable_logging()
     {
-        foreach( $this->get_tables() as $table__value )
-        {
-            if( $this->sql->engine === 'mysql' )
-            {
-                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-insert-'.$table__value));
-                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-update-'.$table__value));
-                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-delete-'.$table__value));
+        foreach ($this->get_tables() as $table__value) {
+            if ($this->sql->engine === 'mysql') {
+                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value));
+                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value));
+                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value));
             }
-            if( $this->sql->engine === 'postgres' )
-            {
-                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-insert-'.$table__value).' ON '.$this->quote($table__value));
-                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-update-'.$table__value).' ON '.$this->quote($table__value));
-                $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-delete-'.$table__value).' ON '.$this->quote($table__value));
+            if ($this->sql->engine === 'postgres') {
+                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value) . ' ON ' . $this->quote($table__value));
+                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value) . ' ON ' . $this->quote($table__value));
+                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value) . ' ON ' . $this->quote($table__value));
             }
         }
     }
 
     public function enable_logging()
     {
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             $this->setup_logging_create_triggers_mysql();
         }
-        if( $this->sql->engine === 'postgres' )
-        {
+        if ($this->sql->engine === 'postgres') {
             $this->setup_logging_create_triggers_postgres();
         }
     }
 
     private function setup_logging_create_triggers_mysql()
     {
-        foreach( $this->get_tables() as $table__value )
-        {
+        foreach ($this->get_tables() as $table__value) {
 
-            $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-insert-'.$table__value));
-            $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-update-'.$table__value));
-            $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-delete-'.$table__value));
-            
-            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
-            {
+            $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value));
+            $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value));
+            $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value));
+
+            if (isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables'])) {
                 continue;
             }
-            if( $table__value === $this->config['logging_table'] )
-            {
+            if ($table__value === $this->config['logging_table']) {
                 continue;
             }
 
@@ -1049,67 +951,69 @@ class dbhelper
             /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
 
             $query = '                
-                CREATE TRIGGER '.$this->quote('trigger-logging-insert-'.$table__value).'
-                AFTER INSERT ON '.$table__value.' FOR EACH ROW
+                CREATE TRIGGER ' . $this->quote('trigger-logging-insert-' . $table__value) . '
+                AFTER INSERT ON ' . $table__value . ' FOR EACH ROW
                 BEGIN
                     DECLARE uuid TEXT;
-                    SET @uuid := '.$this->uuid_query().';
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if(
-                            $column === $primary_key ||
-                            $column === 'updated_by' ||
-                            $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' ||
-                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
-                        ) { return $carry; }
+                    SET @uuid := ' . $this->uuid_query() . ';
+                    ' . array_reduce($this->get_columns($table__value), function ($carry, $column) use ($table__value, $primary_key) {
+                if (
+                    $column === $primary_key ||
+                    $column === 'updated_by' ||
+                    $column === 'created_by' ||
+                    $column === 'created_at' || $column === 'updated_at' || (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
+                ) {
+                    return $carry;
+                }
 
-                        $carry .= '
-                            INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                            VALUES(\'insert\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).', @uuid, NEW.updated_by);
+                $carry .= '
+                            INSERT INTO ' . $this->config['logging_table'] . '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
+                            VALUES(\'insert\', \'' . $table__value . '\', NEW.' . $this->quote($primary_key) . ', \'' . $column . '\', NEW.' . $this->quote($column) . ', @uuid, NEW.updated_by);
                         ';
-                        return $carry;
-                    }).'
+                return $carry;
+            }) . '
                 END
             ';
 
             $this->query($query);
 
             $query = '
-                CREATE TRIGGER '.$this->quote('trigger-logging-update-'.$table__value).'
-                AFTER UPDATE ON '.$table__value.' FOR EACH ROW
+                CREATE TRIGGER ' . $this->quote('trigger-logging-update-' . $table__value) . '
+                AFTER UPDATE ON ' . $table__value . ' FOR EACH ROW
                 BEGIN
                     DECLARE uuid TEXT;
-                    SET @uuid := '.$this->uuid_query().';
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if(
-                            $column === $primary_key ||
-                            $column === 'updated_by' ||
-                            $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' ||
-                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
-                        ) { return $carry; }
-                        $carry .= '
-                            IF (OLD.'.$this->quote($column).' <> NEW.'.$this->quote($column).') OR (OLD.'.$this->quote($column).' IS NULL AND NEW.'.$this->quote($column).' IS NOT NULL) OR (OLD.'.$this->quote($column).' IS NOT NULL AND NEW.'.$this->quote($column).' IS NULL) THEN
-                                INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                                VALUES(\'update\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).', \''.$column.'\', NEW.'.$this->quote($column).', @uuid, NEW.updated_by);
+                    SET @uuid := ' . $this->uuid_query() . ';
+                    ' . array_reduce($this->get_columns($table__value), function ($carry, $column) use ($table__value, $primary_key) {
+                if (
+                    $column === $primary_key ||
+                    $column === 'updated_by' ||
+                    $column === 'created_by' ||
+                    $column === 'created_at' || $column === 'updated_at' || (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
+                ) {
+                    return $carry;
+                }
+                $carry .= '
+                            IF (OLD.' . $this->quote($column) . ' <> NEW.' . $this->quote($column) . ') OR (OLD.' . $this->quote($column) . ' IS NULL AND NEW.' . $this->quote($column) . ' IS NOT NULL) OR (OLD.' . $this->quote($column) . ' IS NOT NULL AND NEW.' . $this->quote($column) . ' IS NULL) THEN
+                                INSERT INTO ' . $this->config['logging_table'] . '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
+                                VALUES(\'update\', \'' . $table__value . '\', NEW.' . $this->quote($primary_key) . ', \'' . $column . '\', NEW.' . $this->quote($column) . ', @uuid, NEW.updated_by);
                             END IF;
                         ';
-                        return $carry;
-                    }).'
+                return $carry;
+            }) . '
                 END
             ';
 
             $this->query($query);
 
             $query = '                
-                CREATE TRIGGER '.$this->quote('trigger-logging-delete-'.$table__value).'
-                AFTER DELETE ON '.$table__value.' FOR EACH ROW
+                CREATE TRIGGER ' . $this->quote('trigger-logging-delete-' . $table__value) . '
+                AFTER DELETE ON ' . $table__value . ' FOR EACH ROW
                 BEGIN
                     DECLARE uuid TEXT;
-                    SET @uuid := '.$this->uuid_query().';
-                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE log_event = \'delete\' AND log_table = \''.$table__value.'\' AND log_key = OLD.'.$this->quote($primary_key).' ) ) THEN
-                        INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                        VALUES(\'delete\', \''.$table__value.'\', OLD.'.$this->quote($primary_key).', NULL, NULL, @uuid, OLD.updated_by);
+                    SET @uuid := ' . $this->uuid_query() . ';
+                    IF( NOT EXISTS( SELECT * FROM ' . $this->config['logging_table'] . ' WHERE log_event = \'delete\' AND log_table = \'' . $table__value . '\' AND log_key = OLD.' . $this->quote($primary_key) . ' ) ) THEN
+                        INSERT INTO ' . $this->config['logging_table'] . '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
+                        VALUES(\'delete\', \'' . $table__value . '\', OLD.' . $this->quote($primary_key) . ', NULL, NULL, @uuid, OLD.updated_by);
                     END IF;
                 END
             ';
@@ -1121,19 +1025,16 @@ class dbhelper
 
     private function setup_logging_create_triggers_postgres()
     {
-        foreach( $this->get_tables() as $table__value )
-        {
+        foreach ($this->get_tables() as $table__value) {
 
-            $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-insert-'.$table__value).' ON '.$this->quote($table__value));
-            $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-update-'.$table__value).' ON '.$this->quote($table__value));
-            $this->query('DROP TRIGGER IF EXISTS '.$this->quote('trigger-logging-delete-'.$table__value).' ON '.$this->quote($table__value));
-            
-            if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables']) )
-            {
+            $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value) . ' ON ' . $this->quote($table__value));
+            $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value) . ' ON ' . $this->quote($table__value));
+            $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value) . ' ON ' . $this->quote($table__value));
+
+            if (isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table__value, $this->config['exclude']['tables'])) {
                 continue;
             }
-            if( $table__value === $this->config['logging_table'] )
-            {
+            if ($table__value === $this->config['logging_table']) {
                 continue;
             }
 
@@ -1141,86 +1042,88 @@ class dbhelper
 
 
             $query = '
-                CREATE OR REPLACE FUNCTION trigger_logging_insert_'.$table__value.'() 
+                CREATE OR REPLACE FUNCTION trigger_logging_insert_' . $table__value . '() 
                 RETURNS TRIGGER AS $$
                 DECLARE
                     uuid TEXT;
                 BEGIN
-                    uuid := '.$this->uuid_query().';
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if(
-                            $column === $primary_key ||
-                            $column === 'updated_by' ||
-                            $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' ||
-                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
-                        ) { return $carry; }
+                    uuid := ' . $this->uuid_query() . ';
+                    ' . array_reduce($this->get_columns($table__value), function ($carry, $column) use ($table__value, $primary_key) {
+                if (
+                    $column === $primary_key ||
+                    $column === 'updated_by' ||
+                    $column === 'created_by' ||
+                    $column === 'created_at' || $column === 'updated_at' || (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
+                ) {
+                    return $carry;
+                }
 
-                        $carry .= '
-                            INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                            VALUES(\'insert\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).'::text, \''.$column.'\', NEW.'.$this->quote($column).'::text, uuid, NEW.updated_by);
+                $carry .= '
+                            INSERT INTO ' . $this->config['logging_table'] . '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
+                            VALUES(\'insert\', \'' . $table__value . '\', NEW.' . $this->quote($primary_key) . '::text, \'' . $column . '\', NEW.' . $this->quote($column) . '::text, uuid, NEW.updated_by);
                         ';
-                        return $carry;
-                    }).'
+                return $carry;
+            }) . '
                     RETURN NULL;
                 END;
                 $$ language \'plpgsql\';
             ';
             $this->query($query);
             $query = '
-                CREATE TRIGGER '.$this->quote('trigger-logging-insert-'.$table__value).'
-                AFTER INSERT ON '.$table__value.' FOR EACH ROW
-                EXECUTE PROCEDURE trigger_logging_insert_'.$table__value.'();
+                CREATE TRIGGER ' . $this->quote('trigger-logging-insert-' . $table__value) . '
+                AFTER INSERT ON ' . $table__value . ' FOR EACH ROW
+                EXECUTE PROCEDURE trigger_logging_insert_' . $table__value . '();
             ';
             $this->query($query);
 
 
             $query = '
-                CREATE OR REPLACE FUNCTION trigger_logging_update_'.$table__value.'() 
+                CREATE OR REPLACE FUNCTION trigger_logging_update_' . $table__value . '() 
                 RETURNS TRIGGER AS $$
                 DECLARE
                     uuid TEXT;
                 BEGIN
-                    uuid := '.$this->uuid_query().';
-                    '.array_reduce($this->get_columns($table__value), function($carry, $column) use ($table__value, $primary_key) {
-                        if(
-                            $column === $primary_key ||
-                            $column === 'updated_by' ||
-                            $column === 'created_by' ||
-                            $column === 'created_at' || $column === 'updated_at' ||
-                            (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
-                        ) { return $carry; }
-                        $carry .= '
-                            IF (OLD.'.$this->quote($column).' <> NEW.'.$this->quote($column).') OR (OLD.'.$this->quote($column).' IS NULL AND NEW.'.$this->quote($column).' IS NOT NULL) OR (OLD.'.$this->quote($column).' IS NOT NULL AND NEW.'.$this->quote($column).' IS NULL) THEN
-                                INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                                VALUES(\'update\', \''.$table__value.'\', NEW.'.$this->quote($primary_key).'::text, \''.$column.'\', NEW.'.$this->quote($column).'::text, uuid, NEW.updated_by);
+                    uuid := ' . $this->uuid_query() . ';
+                    ' . array_reduce($this->get_columns($table__value), function ($carry, $column) use ($table__value, $primary_key) {
+                if (
+                    $column === $primary_key ||
+                    $column === 'updated_by' ||
+                    $column === 'created_by' ||
+                    $column === 'created_at' || $column === 'updated_at' || (isset($this->config['exclude']) && isset($this->config['exclude']['columns']) && isset($this->config['exclude']['columns'][$table__value]) && in_array($column, $this->config['exclude']['columns'][$table__value]))
+                ) {
+                    return $carry;
+                }
+                $carry .= '
+                            IF (OLD.' . $this->quote($column) . ' <> NEW.' . $this->quote($column) . ') OR (OLD.' . $this->quote($column) . ' IS NULL AND NEW.' . $this->quote($column) . ' IS NOT NULL) OR (OLD.' . $this->quote($column) . ' IS NOT NULL AND NEW.' . $this->quote($column) . ' IS NULL) THEN
+                                INSERT INTO ' . $this->config['logging_table'] . '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
+                                VALUES(\'update\', \'' . $table__value . '\', NEW.' . $this->quote($primary_key) . '::text, \'' . $column . '\', NEW.' . $this->quote($column) . '::text, uuid, NEW.updated_by);
                             END IF;
                         ';
-                        return $carry;
-                    }).'
+                return $carry;
+            }) . '
                     RETURN NULL;
                 END;
                 $$ language \'plpgsql\';
             ';
             $this->query($query);
             $query = '
-                CREATE TRIGGER '.$this->quote('trigger-logging-update-'.$table__value).'
-                AFTER UPDATE ON '.$table__value.' FOR EACH ROW
-                EXECUTE PROCEDURE trigger_logging_update_'.$table__value.'();
+                CREATE TRIGGER ' . $this->quote('trigger-logging-update-' . $table__value) . '
+                AFTER UPDATE ON ' . $table__value . ' FOR EACH ROW
+                EXECUTE PROCEDURE trigger_logging_update_' . $table__value . '();
             ';
             $this->query($query);
 
 
             $query = '
-                CREATE OR REPLACE FUNCTION trigger_logging_delete_'.$table__value.'() 
+                CREATE OR REPLACE FUNCTION trigger_logging_delete_' . $table__value . '() 
                 RETURNS TRIGGER AS $$
                 DECLARE
                     uuid TEXT;
                 BEGIN
-                    uuid := '.$this->uuid_query().';
-                    IF( NOT EXISTS( SELECT * FROM '.$this->config['logging_table'].' WHERE log_event = \'delete\' AND log_table = \''.$table__value.'\' AND log_key = OLD.'.$this->quote($primary_key).'::text ) ) THEN
-                        INSERT INTO '.$this->config['logging_table'].'(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
-                        VALUES(\'delete\', \''.$table__value.'\', OLD.'.$this->quote($primary_key).'::text, NULL, NULL, uuid, OLD.updated_by);
+                    uuid := ' . $this->uuid_query() . ';
+                    IF( NOT EXISTS( SELECT * FROM ' . $this->config['logging_table'] . ' WHERE log_event = \'delete\' AND log_table = \'' . $table__value . '\' AND log_key = OLD.' . $this->quote($primary_key) . '::text ) ) THEN
+                        INSERT INTO ' . $this->config['logging_table'] . '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
+                        VALUES(\'delete\', \'' . $table__value . '\', OLD.' . $this->quote($primary_key) . '::text, NULL, NULL, uuid, OLD.updated_by);
                     END IF;
                     RETURN NULL;
                 END;
@@ -1228,12 +1131,11 @@ class dbhelper
             ';
             $this->query($query);
             $query = '
-                CREATE TRIGGER '.$this->quote('trigger-logging-delete-'.$table__value).'
-                AFTER DELETE ON '.$table__value.' FOR EACH ROW
-                EXECUTE PROCEDURE trigger_logging_delete_'.$table__value.'();
+                CREATE TRIGGER ' . $this->quote('trigger-logging-delete-' . $table__value) . '
+                AFTER DELETE ON ' . $table__value . ' FOR EACH ROW
+                EXECUTE PROCEDURE trigger_logging_delete_' . $table__value . '();
             ';
             $this->query($query);
-
         }
     }
 
@@ -1248,37 +1150,29 @@ class dbhelper
         gets to
         fetch('SELECT * FROM table WHERE col1 IN (?) AND col2 IN (?) AND col4 IN (?,?) AND col4 IN (?,?,?)', 1, 2, 3, 7, 8, 3, 4, 5)
         */
-        if( strpos($query, 'IN (') !== false || strpos($query, 'IN(') !== false )
-        {
+        if (strpos($query, 'IN (') !== false || strpos($query, 'IN(') !== false) {
             // find all ?s
-            $in_positions = $this->find_occurences($query,'?');
+            $in_positions = $this->find_occurences($query, '?');
             $in_index = 0;
-            if( !empty($params) )
-            {
-                foreach($params as $params__key=>$params__value)
-                {
-                    if( is_array($params__value) && count($params__value) > 0 )
-                    {
-                        $in_occurence = $this->find_nth_occurence($return,'?',$in_index);
-                        if( substr($return, $in_occurence-1, 3) == '(?)' )
-                        {
-                            $return = substr($return, 0, $in_occurence-1).
-                                    '('.(str_repeat('?,',count($params__value)-1).'?').')'.
-                                    substr($return, $in_occurence+2);
+            if (!empty($params)) {
+                foreach ($params as $params__key => $params__value) {
+                    if (is_array($params__value) && count($params__value) > 0) {
+                        $in_occurence = $this->find_nth_occurence($return, '?', $in_index);
+                        if (substr($return, $in_occurence - 1, 3) == '(?)') {
+                            $return = substr($return, 0, $in_occurence - 1) .
+                                '(' . (str_repeat('?,', count($params__value) - 1) . '?') . ')' .
+                                substr($return, $in_occurence + 2);
                         }
-                        foreach($params__value as $params__value__value)
-                        {
+                        foreach ($params__value as $params__value__value) {
                             $in_index++;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         $in_index++;
                     }
                 }
             }
         }
-        
+
         /*
         finally flatten all arguments
         example:
@@ -1286,19 +1180,18 @@ class dbhelper
         =>
         fetch('SELECT * FROM table WHERE ID = ?', 1, 2, 3, 4, 5, 6)
         */
-        if( !empty($params) )
-        {
-            
+        if (!empty($params)) {
+
             $params_flattened = [];
-            array_walk_recursive($params, function($a) use (&$params_flattened) { $params_flattened[] = $a; });
+            array_walk_recursive($params, function ($a) use (&$params_flattened) {
+                $params_flattened[] = $a;
+            });
             $params = $params_flattened;
         }
 
         // try to sort out bad queries
-        foreach($params as $params__key=>$params__value)
-        {
-            if( is_object($params__value) )
-            {
+        foreach ($params as $params__key => $params__value) {
+            if (is_object($params__value)) {
                 throw new \Exception('object in query');
             }
         }
@@ -1307,50 +1200,37 @@ class dbhelper
         {
             $pos = 0;
             $delete_keys = [];
-            foreach($params as $params__key=>$params__value)
-            {
+            foreach ($params as $params__key => $params__value) {
                 // no more ?s are left
-                if(($pos = strpos($return, '?', $pos + 1)) === false)
-                {
+                if (($pos = strpos($return, '?', $pos + 1)) === false) {
                     break;
                 }
 
                 // if param is not null, nothing must be done
-                if (!is_null($params__value))
-                {
+                if (!is_null($params__value)) {
                     continue;
                 }
 
                 // case 1: if query contains WHERE before ?, then convert != ? to IS NOT NULL and = ? to IS NULL
-                if( strpos( substr($return, 0, $pos), 'WHERE' ) !== false )
-                {
-                    if( strpos(substr($return, $pos-5, 6), '<> ?') !== false )
-                    { 
+                if (strpos(substr($return, 0, $pos), 'WHERE') !== false) {
+                    if (strpos(substr($return, $pos - 5, 6), '<> ?') !== false) {
                         $return = substr($return, 0, ($pos - 5)) . preg_replace('/<> \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
-                    }
-                    elseif( strpos(substr($return, $pos-5, 6), '!= ?') !== false )
-                    {
+                    } elseif (strpos(substr($return, $pos - 5, 6), '!= ?') !== false) {
                         $return = substr($return, 0, ($pos - 5)) . preg_replace('/\!= \?/', 'IS NOT NULL', substr($return, ($pos - 5)), 1);
-                    }
-                    elseif( strpos(substr($return, $pos-5, 6), '= ?') !== false )
-                    {
+                    } elseif (strpos(substr($return, $pos - 5, 6), '= ?') !== false) {
                         $return = substr($return, 0, ($pos - 5)) . preg_replace('/= \?/', 'IS NULL', substr($return, ($pos - 5)), 1);
                     }
                 }
                 // case 2: in all other cases, convert ? to NULL
-                else
-                {
-                    $return = substr($return, 0, $pos) . 'NULL' . substr($return, $pos+1);
+                else {
+                    $return = substr($return, 0, $pos) . 'NULL' . substr($return, $pos + 1);
                 }
 
                 // delete param
                 $delete_keys[] = $params__key;
-
             }
-            if( !empty($delete_keys) )
-            {
-                foreach($delete_keys as $delete_keys__value)
-                {
+            if (!empty($delete_keys)) {
+                foreach ($delete_keys as $delete_keys__value) {
                     unset($params[$delete_keys__value]);
                 }
             }
@@ -1358,31 +1238,28 @@ class dbhelper
         }
 
         // WordPress: replace ? with %s
-        if( $this->sql->driver == 'wordpress' )
-        {
-            foreach($params as $params__key=>$params__value)
-            {
+        if ($this->sql->driver == 'wordpress') {
+            foreach ($params as $params__key => $params__value) {
                 // replace next occurence
-                if( strpos($return, '?') !== false )
-                {
+                if (strpos($return, '?') !== false) {
                     $directive = '%s';
-                    if(
-                        (is_int($params__value) || ctype_digit((string)$params__value))
-                        &&
-                        (
+                    if (
+                        (is_int($params__value) || ctype_digit((string) $params__value))
+                        && (
                             // prevent strings like "00001" to be catched as integers
-                            (strlen($params__value) === 1 && $params__value == '0') || strpos($params__value,'0') !== 0
-                        )
-                    ) { $directive = '%d'; }
-                    else if( is_float($params__value) ) { $directive = '%f'; }                
+                            (strlen($params__value) === 1 && $params__value == '0') || strpos($params__value, '0') !== 0)
+                    ) {
+                        $directive = '%d';
+                    } else if (is_float($params__value)) {
+                        $directive = '%f';
+                    }
                     $return = substr_replace($return, $directive, strpos($return, '?'), strlen('?'));
                 }
             }
         }
-        
+
         // WordPress: pass stripslashes_deep to all parameters (wordpress always adds slashes to them)
-        if( $this->sql->driver == 'wordpress' )
-        {
+        if ($this->sql->driver == 'wordpress') {
             $params = stripslashes_deep($params);
         }
 
@@ -1390,7 +1267,6 @@ class dbhelper
         $return = trim($return);
 
         return [$return, $params];
-
     }
 
     private function debug($query)
@@ -1402,29 +1278,20 @@ class dbhelper
 
         $keys = [];
         $values = $params;
-        foreach ($params as $key => $value)
-        {
+        foreach ($params as $key => $value) {
             // check if named parameters (':param') or anonymous parameters ('?') are used
-            if (is_string($key))
-            {
+            if (is_string($key)) {
                 $keys[] = '/:' . $key . '/';
-            }
-            else
-            {
+            } else {
                 $keys[] = '/[?]/';
             }
             // bring parameter into human-readable format
-            if (is_string($value))
-            {
-                $values[ $key ] = "'" . $value . "'";
-            }
-            elseif (is_array($value))
-            {
-                $values[ $key ] = implode(',', $value);
-            }
-            elseif (is_null($value))
-            {
-                $values[ $key ] = 'NULL';
+            if (is_string($value)) {
+                $values[$key] = "'" . $value . "'";
+            } elseif (is_array($value)) {
+                $values[$key] = implode(',', $value);
+            } elseif (is_null($value)) {
+                $values[$key] = 'NULL';
             }
         }
         $query = preg_replace($keys, $values, $query, 1, $count);
@@ -1432,15 +1299,13 @@ class dbhelper
         print_r($query);
         echo '</pre>';
         die();
-
     }
 
     private function find_occurences($haystack, $needle)
     {
         $positions = [];
         $pos_last = 0;
-        while( ($pos_last = strpos($haystack, $needle, $pos_last)) !== false )
-        {
+        while (($pos_last = strpos($haystack, $needle, $pos_last)) !== false) {
             $positions[] = $pos_last;
             $pos_last = $pos_last + strlen($needle);
         }
@@ -1450,7 +1315,9 @@ class dbhelper
     private function find_nth_occurence($haystack, $needle, $index)
     {
         $positions = $this->find_occurences($haystack, $needle);
-        if(empty($positions) || $index > (count($positions)-1)) { return null; }
+        if (empty($positions) || $index > (count($positions) - 1)) {
+            return null;
+        }
         return $positions[$index];
     }
 
@@ -1458,40 +1325,35 @@ class dbhelper
     {
         $query = '';
         $args = [];
-        $query = 'UPDATE '.$table.' SET'.PHP_EOL;
-        foreach($input[0][0] as $col__key=>$col__value)
-        {
-            $query .= $col__key.' = CASE'.PHP_EOL;
-            foreach($input as $input__key=>$input__value)
-            {
+        $query = 'UPDATE ' . $table . ' SET' . PHP_EOL;
+        foreach ($input[0][0] as $col__key => $col__value) {
+            $query .= $col__key . ' = CASE' . PHP_EOL;
+            foreach ($input as $input__key => $input__value) {
                 $query .= 'WHEN (';
                 $where = [];
-                foreach($input__value[1] as $where__key=>$where__value)
-                {
-                    $where[] = $where__key.' = ?';
+                foreach ($input__value[1] as $where__key => $where__value) {
+                    $where[] = $where__key . ' = ?';
                     $args[] = $where__value;
                 }
-                $query .= implode(' AND ',$where).')'.' THEN ?'.PHP_EOL;
+                $query .= implode(' AND ', $where) . ')' . ' THEN ?' . PHP_EOL;
                 $args[] = $input__value[0][$col__key];
             }
             $query .= 'END';
-            if( array_keys($input[0][0])[count(array_keys($input[0][0]))-1] !== $col__key ) $query .= ',';
+            if (array_keys($input[0][0])[count(array_keys($input[0][0])) - 1] !== $col__key) $query .= ',';
             $query .= PHP_EOL;
         }
         $query .= 'WHERE ';
         $where = [];
-        foreach($input[0][1] as $where__key=>$where__value)
-        {
+        foreach ($input[0][1] as $where__key => $where__value) {
             $where_values = [];
-            foreach($input as $input__key=>$input__value)
-            {
+            foreach ($input as $input__key => $input__value) {
                 $where_values[] = $input__value[1][$where__key];
             }
             $where_values = array_unique($where_values);
-            $where[] = $where__key.' IN ('.str_repeat('?,',count($where_values)-1).'?)';
+            $where[] = $where__key . ' IN (' . str_repeat('?,', count($where_values) - 1) . '?)';
             $args = array_merge($args, $where_values);
         }
-        $query .= implode(' AND ', $where).';';
+        $query .= implode(' AND ', $where) . ';';
         array_unshift($args, $query);
         return call_user_func_array([$this, 'query'], $args);
     }
@@ -1500,85 +1362,64 @@ class dbhelper
     {
         $table = $this->get_table_name_from_query($query);
 
-        if( isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table, $this->config['exclude']['tables']) )
-        {
+        if (isset($this->config['exclude']) && isset($this->config['exclude']['tables']) && in_array($table, $this->config['exclude']['tables'])) {
             return $query;
         }
-        if( $table === $this->config['logging_table'] )
-        {
+        if ($table === $this->config['logging_table']) {
             return $query;
         }
 
-        if( stripos($query, 'INSERT') === 0 )
-        {
+        if (stripos($query, 'INSERT') === 0) {
 
-            $pos1 = strpos($query,')');
-            $pos2 = strrpos($query,')');
-            $pos3 = stripos($query, 'INTO')+strlen('INTO');
+            $pos1 = strpos($query, ')');
+            $pos2 = strrpos($query, ')');
+            $pos3 = stripos($query, 'INTO') + strlen('INTO');
             $pos4 = strpos($query, '(');
-            if( $pos1 === false || $pos2 === false || $pos2 != strlen($query)-1 || strpos(substr($query, 0, $pos1),'updated_by') !== false )
-            {
+            if ($pos1 === false || $pos2 === false || $pos2 != strlen($query) - 1 || strpos(substr($query, 0, $pos1), 'updated_by') !== false) {
                 return $query;
             }
-            $query = substr($query, 0, $pos1) . ',updated_by' . substr($query, $pos1, $pos2-$pos1) . ',\''.$this->config['updated_by'].'\'' . substr($query, $pos2);
-        }
-
-        else if( stripos($query, 'UPDATE') === 0 )
-        {
-            $pos1 = stripos($query,'SET')+strlen('SET');
-            if( $pos1 !== false && strpos(substr($query, $pos1),'updated_by') === false )
-            {
-                $query = substr($query, 0, $pos1) . ' updated_by = \''.$this->config['updated_by'].'\', ' . substr($query, $pos1);
+            $query = substr($query, 0, $pos1) . ',updated_by' . substr($query, $pos1, $pos2 - $pos1) . ',\'' . $this->config['updated_by'] . '\'' . substr($query, $pos2);
+        } else if (stripos($query, 'UPDATE') === 0) {
+            $pos1 = stripos($query, 'SET') + strlen('SET');
+            if ($pos1 !== false && strpos(substr($query, $pos1), 'updated_by') === false) {
+                $query = substr($query, 0, $pos1) . ' updated_by = \'' . $this->config['updated_by'] . '\', ' . substr($query, $pos1);
             }
-        }
-
-        else if( stripos($query, 'DELETE') === 0 )
-        {
+        } else if (stripos($query, 'DELETE') === 0) {
             // fetch all ids that are affected
-            $ids = $this->fetch_col('SELECT '.$this->get_primary_key($table).' '.substr($query, stripos($query,'FROM')), $params);
-            if( !empty($ids) )
-            {
-                foreach($ids as $id)
-                {
+            $ids = $this->fetch_col('SELECT ' . $this->get_primary_key($table) . ' ' . substr($query, stripos($query, 'FROM')), $params);
+            if (!empty($ids)) {
+                foreach ($ids as $id) {
                     $this->insert('logs', ['log_event' => 'delete', 'log_table' => $table, 'log_key' => $id, 'log_uuid' => $this->uuid(), 'updated_by' => $this->config['updated_by']]);
                 }
             }
         }
 
         return $query;
-
     }
 
     private function get_table_name_from_query($query)
     {
         $table = '';
 
-        if( stripos($query, 'INSERT') === 0 )
-        {
-            $pos1 = stripos($query, 'INTO')+strlen('INTO');
+        if (stripos($query, 'INSERT') === 0) {
+            $pos1 = stripos($query, 'INTO') + strlen('INTO');
             $pos2 = strpos($query, '(');
-            $table = substr($query, $pos1, $pos2-$pos1);
+            $table = substr($query, $pos1, $pos2 - $pos1);
+        } else if (stripos($query, 'UPDATE') === 0) {
+            $pos1 = stripos($query, 'UPDATE') + strlen('UPDATE');
+            $pos2 = stripos($query, 'SET');
+            $table = substr($query, $pos1, $pos2 - $pos1);
+        } else if (stripos($query, 'DELETE') === 0) {
+            $pos1 = stripos($query, 'FROM') + strlen('FROM');
+            $pos2 = stripos($query, 'WHERE');
+            if ($pos2 === false) {
+                $pos2 = strlen($query);
+            }
+            $table = substr($query, $pos1, $pos2 - $pos1);
         }
 
-
-        else if( stripos($query, 'UPDATE') === 0 )
-        {
-            $pos1 = stripos($query,'UPDATE')+strlen('UPDATE');
-            $pos2 = stripos($query,'SET');
-            $table = substr($query, $pos1, $pos2-$pos1);
-        }
-
-
-        else if( stripos($query, 'DELETE') === 0 )
-        {
-            $pos1 = stripos($query,'FROM')+strlen('FROM');
-            $pos2 = stripos($query,'WHERE');
-            if( $pos2 === false ) { $pos2 = strlen($query); }
-            $table = substr($query, $pos1, $pos2-$pos1);
-        }
-
-        $table = str_replace('`','',$table);
-        $table = str_replace('"','',$table);
+        $table = str_replace('`', '', $table);
+        $table = str_replace('"', '', $table);
         $table = trim($table);
 
         return $table;
@@ -1586,39 +1427,32 @@ class dbhelper
 
     private function quote($name)
     {
-        if( $this->sql->engine === 'mysql' )
-        {
-            return '`'.$name.'`';
+        if ($this->sql->engine === 'mysql') {
+            return '`' . $name . '`';
         }
-        if( $this->sql->engine === 'postgres' )
-        {
-            return '"'.$name.'"';
+        if ($this->sql->engine === 'postgres') {
+            return '"' . $name . '"';
         }
-        if( $this->sql->engine === 'sqlite' )
-        {
-            return '"'.$name.'"';
+        if ($this->sql->engine === 'sqlite') {
+            return '"' . $name . '"';
         }
     }
 
     public function uuid()
     {
-        return $this->fetch_var('SELECT '.$this->uuid_query());
+        return $this->fetch_var('SELECT ' . $this->uuid_query());
     }
 
     private function uuid_query()
     {
-        if( $this->sql->engine === 'mysql' )
-        {
+        if ($this->sql->engine === 'mysql') {
             return 'UUID()';
         }
-        if( $this->sql->engine === 'postgres' )
-        {
+        if ($this->sql->engine === 'postgres') {
             return 'uuid_in(md5(random()::text || now()::text)::cstring)';
         }
-        if( $this->sql->engine === 'sqlite' )
-        {
+        if ($this->sql->engine === 'sqlite') {
             return "substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12) from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)";
         }
     }
-
 }

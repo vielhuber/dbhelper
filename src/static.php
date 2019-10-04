@@ -89,6 +89,11 @@ function db_get_columns($table)
     global $db;
     return $db->get_columns($table);
 }
+function db_get_foreign_keys($table)
+{
+    global $db;
+    return $db->get_foreign_keys($table);
+}
 function db_has_column($table, $column)
 {
     global $db;

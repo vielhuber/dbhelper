@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests;
 
 use vielhuber\dbhelper\dbhelper;
@@ -32,8 +33,7 @@ trait BasicSetup
     {
         self::$db->clear(); // if something failed
         self::$db->create_table('test', [
-            'id' =>
-                (self::$credentials->engine === 'sqlite' ? 'INTEGER' : 'SERIAL') . ' PRIMARY KEY',
+            'id' => (self::$credentials->engine === 'sqlite' ? 'INTEGER' : 'SERIAL') . ' PRIMARY KEY',
             'col1' => 'varchar(255)',
             'col2' => 'varchar(255)',
             'col3' => 'varchar(255)'

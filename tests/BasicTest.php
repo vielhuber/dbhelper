@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests;
 
 use vielhuber\dbhelper\dbhelper;
@@ -303,6 +304,19 @@ trait BasicTest
     function test__get_columns()
     {
         $this->assertEquals(self::$db->get_columns('test'), ['id', 'col1', 'col2', 'col3']);
+    }
+
+    function test__get_foreign_keys()
+    {
+        self::$db->create_table('test_foreign', [
+            'id' => (self::$credentials->engine === 'sqlite' ? 'INTEGER' : 'SERIAL') . ' PRIMARY KEY',
+            'col1' => 'varchar(255)',
+            'col2' => 'varchar(255)',
+            'col3' => ['mysql' => 'BIGINT UNSIGNED', 'postgres' => 'INTEGER', 'sqlite' => ''][self::$credentials->engine],
+            'FOREIGN KEY(col3)' => 'REFERENCES test(id)'
+        ]);
+        $this->assertEquals(self::$db->get_foreign_keys('test'), []);
+        $this->assertEquals(self::$db->get_foreign_keys('test_foreign'), ['col3' => ['test', 'id']]);
     }
 
     function test__has_column()
