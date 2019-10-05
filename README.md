@@ -101,8 +101,10 @@ $db->has_column('tablename', 'col1') // true
 $db->get_datatype('tablename', 'col1') // varchar
 $db->get_primary_key('tablename') // id
 $db->uuid() // generate uuid (v4) from inside the database
-$db->get_foreign_keys('tablename') // [['user_id' => ['users','id'], ...]
-$db->is_foreign_key('tablename', 'user_id') // true
+$db->get_foreign_keys('users') // [['address_id' => ['addresses','id'], ...]
+$db->is_foreign_key('users', 'address_id') // true
+$db->get_foreign_tables_out('users') // [['addresses' => [['address_id','id']], ...]
+$db->get_foreign_tables_in('addresses') // [['users' => [['address_id','id']], ...]
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [

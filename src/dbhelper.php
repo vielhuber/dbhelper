@@ -764,6 +764,45 @@ class dbhelper
         return array_key_exists($column, $this->get_foreign_keys($table));
     }
 
+    public function get_foreign_tables_out($table)
+    {
+        $return = [];
+        foreach ($this->get_foreign_keys($table) as $foreign_keys__key => $foreign_keys__value) {
+            if (!array_key_exists(
+                $foreign_keys__value[0],
+                $return
+            )) {
+                $return[$foreign_keys__value[0]] = [];
+            }
+            $return[$foreign_keys__value[0]][] = [$foreign_keys__key, $foreign_keys__value[1]];
+        }
+        return $return;
+    }
+
+    public function get_foreign_tables_in($table)
+    {
+        $return = [];
+        $tables = $this->get_tables();
+        foreach ($tables as $tables__value) {
+            if ($tables__value === $table) {
+                continue;
+            }
+            foreach ($this->get_foreign_tables_out($tables__value) as $foreign_tables__key => $foreign_tables__value) {
+                if ($foreign_tables__key !== $table) {
+                    continue;
+                }
+                if (!array_key_exists(
+                    $tables__value,
+                    $return
+                )) {
+                    $return[$tables__value] = [];
+                }
+                $return[$tables__value] = array_merge($return[$tables__value], $foreign_tables__value);
+            }
+        }
+        return $return;
+    }
+
     public function has_column($table, $column)
     {
         return in_array($column, $this->get_columns($table));

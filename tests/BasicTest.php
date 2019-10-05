@@ -319,6 +319,11 @@ trait BasicTest
         $this->assertEquals(self::$db->is_foreign_key('test', 'col1'), false);
         $this->assertEquals(self::$db->get_foreign_keys('test_foreign'), ['col3' => ['test', 'id']]);
         $this->assertEquals(self::$db->is_foreign_key('test_foreign', 'col3'), true);
+
+        $this->assertEquals(self::$db->get_foreign_tables_out('test'), []);
+        $this->assertEquals(self::$db->get_foreign_tables_out('test_foreign'), ['test' => [['col3', 'id']]]);
+        $this->assertEquals(self::$db->get_foreign_tables_in('test_foreign'), []);
+        $this->assertEquals(self::$db->get_foreign_tables_in('test'), ['test_foreign' => [['col3', 'id']]]);
     }
 
     function test__has_column()
