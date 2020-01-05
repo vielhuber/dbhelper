@@ -105,6 +105,7 @@ $db->get_foreign_keys('users') // [['address_id' => ['addresses','id'], ...]
 $db->is_foreign_key('users', 'address_id') // true
 $db->get_foreign_tables_out('users') // [['addresses' => [['address_id','id']], ...]
 $db->get_foreign_tables_in('addresses') // [['users' => [['address_id','id']], ...]
+$db->get_duplicates() // ['count' => ['tbl1' => 3, 'tbl2' => 17], 'data' => ['tbl1' => [...], 'tbl2' => [...]]
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [

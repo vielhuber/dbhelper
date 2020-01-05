@@ -860,6 +860,37 @@ class dbhelper
         }
     }
 
+    public function get_duplicates()
+    {
+        $duplicates_data = [];
+        $duplicates_count = [];
+        $tables = $this->get_tables();
+        foreach ($tables as $tables__value) {
+            $primaryKey = $this->get_primary_key($tables__value);
+            if( $primaryKey == '' ) {
+                continue;
+            }
+            $columns = [];
+            foreach($this->get_columns($tables__value) as $columns__value) {
+                if( $columns__value === $primaryKey ) {
+                    continue;
+                }
+                $columns[] = $this->quote($columns__value);
+            }
+            $duplicates_this = $this->fetch_all(
+                'SELECT ' . implode(', ', $columns) . ', MIN('.$this->quote($primaryKey).') as '.$this->quote('MIN()').', COUNT(*) as '.$this->quote('COUNT()').' FROM ' . $tables__value . ' GROUP BY ' . implode(', ', $columns) . ' HAVING COUNT(*) > 1'
+            );
+            if (!empty($duplicates_this)) {
+                $duplicates_data[$tables__value] = $duplicates_this;
+                $duplicates_count[$tables__value] = 0;
+                foreach($duplicates_this as $duplicates_this__value) {
+                    $duplicates_count[$tables__value] += $duplicates_this__value['COUNT()'];
+                }
+            }
+        }
+        return ['count' => $duplicates_count, 'data' => $duplicates_data];
+    }
+
     public function enable_auto_inject()
     {
         $this->config['auto_inject'] = true;

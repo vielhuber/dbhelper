@@ -326,6 +326,23 @@ trait BasicTest
         $this->assertEquals(self::$db->get_foreign_tables_in('test'), ['test_foreign' => [['col3', 'id']]]);
     }
 
+    function test__get_duplicates()
+    {
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
+        $this->assertEquals(self::$db->get_duplicates('test'), ['count' => [], 'data' => []]);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
+        $this->assertEquals(self::$db->get_duplicates('test'), ['count' => ['test' => 2], 'data' => ['test' => [['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2', 'MIN()' => 2, 'COUNT()' => 2]]]]);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
+        $this->assertEquals(self::$db->get_duplicates('test'), ['count' => ['test' => 4], 'data' => ['test' => [['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2', 'MIN()' => 2, 'COUNT()' => 4]]]]);
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        $this->assertEquals(self::$db->get_duplicates('test'), ['count' => ['test' => 6], 'data' => ['test' => [
+            ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1', 'MIN()' => 1, 'COUNT()' => 2],
+            ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2', 'MIN()' => 2, 'COUNT()' => 4],
+        ]]]);
+    }
+
     function test__has_column()
     {
         $this->assertEquals(self::$db->has_column('test', 'col1'), true);
