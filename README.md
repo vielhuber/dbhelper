@@ -23,7 +23,7 @@ $db = new dbhelper();
 ```php
 /* connect to database */
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
-$db->connect('pdo', 'postgres', '127.0.0.1', 'username', 'password', 'database', 3306);
+$db->connect('pdo', 'postgres', '127.0.0.1', 'username', 'password', 'database', 5432);
 $db->connect('pdo', 'sqlite', 'database.db');
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306); // database must not be available
 
