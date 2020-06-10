@@ -629,6 +629,7 @@ class dbhelper
                 $this->query('TRUNCATE TABLE ' . $table);
             } elseif ($this->sql->engine === 'sqlite') {
                 $this->query('DELETE FROM ' . $table);
+                $this->query('VACUUM');
             }
         }
     }
