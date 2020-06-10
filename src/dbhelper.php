@@ -1620,11 +1620,12 @@ class dbhelper
         return [$return, $params];
     }
 
-    private function debug($query)
+    public function debug($query)
     {
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
+        list($query, $params) = $this->preparse_query($query, $params);
 
         $keys = [];
         $values = $params;
@@ -1645,10 +1646,7 @@ class dbhelper
             }
         }
         $query = preg_replace($keys, $values, $query, 1, $count);
-        echo '<pre>';
-        print_r($query);
-        echo '</pre>';
-        die();
+        return $query;
     }
 
     private function find_occurences($haystack, $needle)

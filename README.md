@@ -90,6 +90,9 @@ $id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
 $db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM tablename WHERE ID = ?', 1);
 
+/* quickly debug raw queries */
+$db->debug('DELETE FROM tablename WHERE row1 = ?', null); // DELETE FROM tablename WHERE row1 IS NULL
+
 /* last insert id */
 $db->insert('tablename', ['col1' => 'foo']);
 $db->last_insert_id();

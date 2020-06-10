@@ -1,0 +1,10 @@
+{
+  "name": "",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@prettier/plugin-php": "^0.14.2",
+    "prettier": "^2.0.5"
+  }
+}
