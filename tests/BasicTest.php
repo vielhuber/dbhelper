@@ -346,11 +346,13 @@ trait BasicTest
     {
         try {
             self::$db->insert('test', ['id' => 1, 'col1' => (object) ['foo' => 'bar']]);
+            $this->assertTrue(false);
         } catch (\Exception $e) {
             $this->assertTrue(true);
         }
         try {
             self::$db->query('SELCET * FROM test');
+            $this->assertTrue(false);
         } catch (\Exception $e) {
             $this->assertTrue(true);
         }

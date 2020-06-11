@@ -34,7 +34,7 @@ class dbhelper
                         [
                             PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci',
                             PDO::ATTR_EMULATE_PREPARES => false,
-                            PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING
+                            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
                         ]
                     );
                 } elseif ($engine === 'postgres') {
@@ -47,7 +47,7 @@ class dbhelper
                 } elseif ($engine === 'sqlite') {
                     $sql = new PDO('sqlite:' . $host, null, null, [
                         PDO::ATTR_EMULATE_PREPARES => false,
-                        PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
                     ]);
                 } else {
                     throw new \Exception('missing engine');
