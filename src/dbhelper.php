@@ -1804,7 +1804,7 @@ class dbhelper
         return $table;
     }
 
-    private function quote($name)
+    public function quote($name)
     {
         if ($this->sql->engine === 'mysql') {
             return '`' . $name . '`';
