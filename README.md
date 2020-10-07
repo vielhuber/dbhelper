@@ -108,7 +108,13 @@ $db->get_foreign_keys('users') // [['address_id' => ['addresses','id'], ...]
 $db->is_foreign_key('users', 'address_id') // true
 $db->get_foreign_tables_out('users') // [['addresses' => [['address_id','id']], ...]
 $db->get_foreign_tables_in('addresses') // [['users' => [['address_id','id']], ...]
+
+/* handle duplicates */
 $db->get_duplicates() // ['count' => ['tbl1' => 3, 'tbl2' => 17], 'data' => ['tbl1' => [...], 'tbl2' => [...]]
+$db->delete_duplicates('tablename') // delete duplicates based on all columns except the primary key
+$db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1']) // based on specific columns
+$db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], false) // null values are considered equal by default; you can disable this untypical behaviour for sql with "false"
+$db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], true, ['id' => 'desc']) // keep row with highest primary key "id"
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [

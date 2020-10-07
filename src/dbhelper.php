@@ -626,7 +626,7 @@ class dbhelper
             if ($this->sql->engine === 'mysql') {
                 $this->query('TRUNCATE TABLE ' . $table);
             } elseif ($this->sql->engine === 'postgres') {
-                $this->query('TRUNCATE TABLE ' . $table);
+                $this->query('TRUNCATE TABLE ' . $table . ' RESTART IDENTITY');
             } elseif ($this->sql->engine === 'sqlite') {
                 $this->query('DELETE FROM ' . $table);
                 $this->query('VACUUM');
@@ -919,6 +919,53 @@ class dbhelper
             }
         }
         return ['count' => $duplicates_count, 'data' => $duplicates_data];
+    }
+
+    public function delete_duplicates($table, $cols = [], $match_null_values = true, $primary = [])
+    {
+        if (empty($primary)) {
+            $primary = [$this->get_primary_key($table) => 'desc'];
+        }
+        $primary_key = array_keys($primary)[0];
+        $primary_order = $primary[$primary_key];
+
+        if (empty($cols)) {
+            $cols = $this->get_columns($table);
+            $cols = array_filter($cols, function ($cols__value) use ($primary_key) {
+                return $cols__value !== $primary_key;
+            });
+        }
+
+        $query = '';
+        $query .= 'DELETE FROM ' . $this->quote($table) . ' ';
+        $query .= 'WHERE ' . $this->quote($primary_key) . ' NOT IN (';
+        $query .= 'SELECT * FROM (';
+        $query .=
+            'SELECT ' .
+            ($primary_order === 'desc' ? 'MAX' : 'MIN') .
+            '(' .
+            $this->quote($primary_key) .
+            ') FROM ' .
+            $this->quote($table) .
+            ' GROUP BY ';
+        $query .= implode(
+            ', ',
+            array_map(function ($cols__value) use ($match_null_values, $primary_key) {
+                $ret = '';
+                if ($match_null_values === false) {
+                    $ret .= 'COALESCE(CAST(';
+                }
+                $ret .= $this->quote($cols__value);
+                if ($match_null_values === false) {
+                    $ret .= ' AS CHAR), CAST(' . $this->quote($primary_key) . ' AS CHAR))';
+                }
+                return $ret;
+            }, $cols)
+        );
+        $query .= ') as tmp';
+        $query .= ')';
+
+        $this->query($query);
     }
 
     public function enable_auto_inject()

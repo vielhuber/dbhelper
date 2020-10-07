@@ -303,6 +303,45 @@ trait BasicTest
         ]);
     }
 
+    function test__delete_duplicates()
+    {
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
+        self::$db->delete_duplicates('test');
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 2);
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 4);
+        self::$db->delete_duplicates('test');
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 2);
+        self::$db->insert('test', ['col1' => null, 'col2' => 'bar3', 'col3' => 'baz2']);
+        self::$db->insert('test', ['col1' => null, 'col2' => 'bar4', 'col3' => 'baz2']);
+        self::$db->delete_duplicates('test', ['col2']);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 4);
+        self::$db->delete_duplicates('test', ['col1', 'col3']);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 3);
+        self::$db->clear('test');
+
+        self::$db->insert('test', ['col1' => null, 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => null, 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->delete_duplicates('test', ['col1'], false);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 2);
+        self::$db->delete_duplicates('test', ['col1'], true);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 1);
+        self::$db->clear('test');
+
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->delete_duplicates('test', ['col1'], true, ['id' => 'desc']);
+        $this->assertEquals(self::$db->fetch_var('SELECT id FROM test LIMIT 1'), 2);
+        self::$db->clear('test');
+
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->delete_duplicates('test', ['col1'], true, ['id' => 'asc']);
+        $this->assertEquals(self::$db->fetch_var('SELECT id FROM test LIMIT 1'), 1);
+    }
+
     function test__has_column()
     {
         $this->assertEquals(self::$db->has_column('test', 'col1'), true);
