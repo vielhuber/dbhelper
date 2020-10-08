@@ -114,7 +114,8 @@ $db->get_duplicates() // ['count' => ['tbl1' => 3, 'tbl2' => 17], 'data' => ['tb
 $db->delete_duplicates('tablename') // delete duplicates based on all columns except the primary key
 $db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1']) // based on specific columns
 $db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], false) // null values are considered equal by default; you can disable this untypical behaviour for sql with "false"
-$db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], true, ['id' => 'desc']) // keep row with highest primary key "id"
+$db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], true, ['id' => 'asc']) // keep row with lowest primary key "id" (normally this is 'id' => 'desc')
+$db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], true, ['id' => 'asc'], false) // case insensitive match (normally this is case sensitive)
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [

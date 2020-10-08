@@ -340,6 +340,15 @@ trait BasicTest
         self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
         self::$db->delete_duplicates('test', ['col1'], true, ['id' => 'asc']);
         $this->assertEquals(self::$db->fetch_var('SELECT id FROM test LIMIT 1'), 1);
+        self::$db->clear('test');
+
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => null]);
+        self::$db->insert('test', ['col1' => 'FOO1', 'col2' => 'BAR1', 'col3' => null]);
+        self::$db->delete_duplicates('test');
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 2);
+        self::$db->delete_duplicates('test', [], true, [], false);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 1);
+        self::$db->clear('test');
     }
 
     function test__has_column()

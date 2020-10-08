@@ -921,8 +921,13 @@ class dbhelper
         return ['count' => $duplicates_count, 'data' => $duplicates_data];
     }
 
-    public function delete_duplicates($table, $cols = [], $match_null_values = true, $primary = [])
-    {
+    public function delete_duplicates(
+        $table,
+        $cols = [],
+        $match_null_values = true,
+        $primary = [],
+        $case_sensitivity = true
+    ) {
         if (empty($primary)) {
             $primary = [$this->get_primary_key($table) => 'desc'];
         }
@@ -950,12 +955,27 @@ class dbhelper
             ' GROUP BY ';
         $query .= implode(
             ', ',
-            array_map(function ($cols__value) use ($match_null_values, $primary_key) {
+            array_map(function ($cols__value) use ($match_null_values, $primary_key, $case_sensitivity) {
                 $ret = '';
                 if ($match_null_values === false) {
                     $ret .= 'COALESCE(CAST(';
                 }
+                // postgres and sqlite do a case sensitive group by by default
+                // on mysql we need the following modification
+                if ($this->sql->engine === 'mysql') {
+                    $type = 'BINARY';
+                    $ret .= 'CAST(';
+                }
+                if ($case_sensitivity === false) {
+                    $ret .= 'LOWER(';
+                }
                 $ret .= $this->quote($cols__value);
+                if ($case_sensitivity === false) {
+                    $ret .= ')';
+                }
+                if ($this->sql->engine === 'mysql') {
+                    $ret .= ' AS ' . $type . ')';
+                }
                 if ($match_null_values === false) {
                     $ret .= ' AS CHAR), CAST(' . $this->quote($primary_key) . ' AS CHAR))';
                 }
