@@ -963,8 +963,10 @@ class dbhelper
                 // postgres and sqlite do a case sensitive group by by default
                 // on mysql we need the following modification
                 if ($this->sql->engine === 'mysql') {
-                    $type = 'BINARY';
-                    $ret .= 'CAST(';
+                    // variant 1: Cast as binary (this is disabled due to a nasty performance bug)
+                    //$ret .= 'CAST(';
+                    // variant 2: MD5 trick
+                    $ret .= 'MD5(';
                 }
                 if ($case_sensitivity === false) {
                     $ret .= 'LOWER(';
@@ -974,7 +976,8 @@ class dbhelper
                     $ret .= ')';
                 }
                 if ($this->sql->engine === 'mysql') {
-                    $ret .= ' AS ' . $type . ')';
+                    //$ret .= ' AS BINARY)';
+                    $ret .= ')';
                 }
                 if ($match_null_values === false) {
                     $ret .= ' AS CHAR), CAST(' . $this->quote($primary_key) . ' AS CHAR))';
