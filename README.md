@@ -86,7 +86,7 @@ $db->disconnect_with_delete();
     $db->disconnect();
 
 /* raw queries */
-$id = $db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
+$db->query('INSERT INTO tablename(row1, row2) VALUES(?, ?, ?)', 1, 2, 3);
 $db->query('UPDATE tablename SET row1 = ? WHERE ID = ?', 1, 2);
 $db->query('DELETE FROM tablename WHERE ID = ?', 1);
 
@@ -229,7 +229,10 @@ $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 ### return values
 
-as return values dbhelper usually returns associative arrays. if you use it with wordpress, objects are returned. dbhelper throws exceptions on all occured errors.
+as return values after fetching results dbhelper usually returns associative arrays.\
+if you use it with wordpress, objects are returned.\
+dbhelper throws exceptions on all occured errors.\
+on any `delete`, `update` or even `query` operation, the number of affected rows are returned.
 
 ### static version
 

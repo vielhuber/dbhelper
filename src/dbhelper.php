@@ -941,6 +941,60 @@ class dbhelper
             });
         }
 
+        $ret = 1;
+        while ($ret > 0) {
+            $query = '';
+            $query .= 'DELETE FROM ' . $this->quote($table) . ' ';
+            $query .= 'WHERE ' . $this->quote($primary_key) . ' IN (';
+            $query .= 'SELECT * FROM (';
+            $query .=
+                'SELECT ' .
+                ($primary_order === 'desc' ? 'MIN' : 'MAX') .
+                '(' .
+                $this->quote($primary_key) .
+                ') FROM ' .
+                $this->quote($table) .
+                ' GROUP BY ';
+            $query .= implode(
+                ', ',
+                array_map(function ($cols__value) use ($match_null_values, $primary_key, $case_sensitivity) {
+                    $ret = '';
+                    if ($match_null_values === false) {
+                        $ret .= 'COALESCE(CAST(';
+                    }
+                    // postgres and sqlite do a case sensitive group by by default
+                    // on mysql we need the following modification
+                    if ($this->sql->engine === 'mysql') {
+                        // variant 1: Cast as binary (we use md5, because its neater)
+                        //$ret .= 'CAST(';
+                        // variant 2: MD5 trick
+                        $ret .= 'MD5(';
+                    }
+                    if ($case_sensitivity === false) {
+                        $ret .= 'LOWER(';
+                    }
+                    $ret .= $this->quote($cols__value);
+                    if ($case_sensitivity === false) {
+                        $ret .= ')';
+                    }
+                    if ($this->sql->engine === 'mysql') {
+                        //$ret .= ' AS BINARY)';
+                        $ret .= ')';
+                    }
+                    if ($match_null_values === false) {
+                        $ret .= ' AS CHAR), CAST(' . $this->quote($primary_key) . ' AS CHAR))';
+                    }
+                    return $ret;
+                }, $cols)
+            );
+            $query .= 'HAVING COUNT(*) > 1';
+            $query .= ') as tmp';
+            $query .= ')';
+            $ret = $this->query($query);
+        }
+
+        // the approach has massive performance issues not work on some mariadb dbs
+        /*
         $query = '';
         $query .= 'DELETE FROM ' . $this->quote($table) . ' ';
         $query .= 'WHERE ' . $this->quote($primary_key) . ' NOT IN (';
@@ -963,7 +1017,7 @@ class dbhelper
                 // postgres and sqlite do a case sensitive group by by default
                 // on mysql we need the following modification
                 if ($this->sql->engine === 'mysql') {
-                    // variant 1: Cast as binary (this is disabled due to a nasty performance bug)
+                    // variant 1: Cast as binary (we use md5, because its neater)
                     //$ret .= 'CAST(';
                     // variant 2: MD5 trick
                     $ret .= 'MD5(';
@@ -987,8 +1041,7 @@ class dbhelper
         );
         $query .= ') as tmp';
         $query .= ')';
-
-        $this->query($query);
+        */
     }
 
     public function enable_auto_inject()

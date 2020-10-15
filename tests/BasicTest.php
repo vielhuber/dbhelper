@@ -25,6 +25,8 @@ trait BasicTest
         self::$db->update('test', ['col1' => 'bar'], ['col1' => 'foo']);
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', 'foo'), 0);
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', 'bar'), 1);
+        $this->assertEquals(self::$db->update('test', ['col1' => 'foo'], ['col1' => 'bar']), 1);
+        $this->assertEquals(self::$db->update('test', ['col1' => 'foo'], ['col1' => 'bar']), 0);
     }
 
     function test__delete()
@@ -36,12 +38,12 @@ trait BasicTest
             self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'),
             2
         );
-        self::$db->delete('test', ['col1' => 'foo']);
+        $this->assertEquals(self::$db->delete('test', ['col1' => 'foo']), 1);
         $this->assertEquals(
             self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'),
             1
         );
-        self::$db->query('DELETE FROM test WHERE col1 = ?', 'bar');
+        $this->assertEquals(self::$db->query('DELETE FROM test WHERE col1 = ?', 'bar'), 1);
         $this->assertEquals(
             self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'),
             0
@@ -348,6 +350,15 @@ trait BasicTest
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 2);
         self::$db->delete_duplicates('test', [], true, [], false);
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 1);
+        self::$db->clear('test');
+
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => null]);
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => null]);
+        self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => null]);
+        $id = self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => null]);
+        self::$db->delete_duplicates('test');
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 1);
+        $this->assertEquals(self::$db->fetch_var('SELECT id FROM test LIMIT 1'), $id);
         self::$db->clear('test');
     }
 
