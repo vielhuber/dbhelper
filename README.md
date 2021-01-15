@@ -41,6 +41,10 @@ $db->fetch_row('SELECT * FROM tablename WHERE ID = ?', 1);
 $db->fetch_col('SELECT col FROM tablename WHERE ID > ?', 1);
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
+/* count */
+$db->count('tablename') // 42
+$db->count('tablename', ['col1' => 'foo']) // 7
+
 /* automatic flattened arguments */
 $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', [1], 2, [3], [4,[5,6]]);
 // gets transformed to
@@ -116,6 +120,12 @@ $db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'])
 $db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], false) // null values are considered equal by default; you can disable this untypical behaviour for sql with "false"
 $db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], true, ['id' => 'asc']) // keep row with lowest primary key "id" (normally this is 'id' => 'desc')
 $db->delete_duplicates('tablename', ['common_col1','common_col1','common_col1'], true, ['id' => 'asc'], false) // case insensitive match (normally this is case sensitive)
+
+/* globally trim values */
+$db->trim_values() // [['table' => 'tbl1', 'column' => 'col1', 'id' => 1, 'before' => ' foo', 'after' => 'foo'], ...]
+$db->trim_values(false) // by default trim_values does a dry run (no updates)
+$db->trim_values(true) // do real updates
+$db->trim_values(false, ['table1', 'table2' => ['col1', 'col2']]) // ignore tables and columns
 
 /* batch functions (they create only one query) */
 $db->insert('tablename', [

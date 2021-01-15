@@ -89,6 +89,24 @@ trait BasicTest
         $this->assertEquals(self::$db->fetch_var('SELECT col1 FROM test WHERE id = ?', $id2), 'bar');
     }
 
+    function test__count()
+    {
+        $this->assertEquals(self::$db->count('test'), 0);
+        $this->assertEquals(self::$db->count('test', ['id' => 1]), 0);
+        self::$db->insert('test', ['col1' => 'foo']);
+        $this->assertEquals(self::$db->count('test'), 1);
+        $this->assertEquals(self::$db->count('test', ['id' => 1]), 1);
+        self::$db->insert('test', ['col1' => 'bar']);
+        $this->assertEquals(self::$db->count('test'), 2);
+        $this->assertEquals(self::$db->count('test', ['id' => 1]), 1);
+        self::$db->delete('test', ['id' => 2]);
+        $this->assertEquals(self::$db->count('test'), 1);
+        $this->assertEquals(self::$db->count('test', ['id' => 1]), 1);
+        self::$db->delete('test', ['id' => 1]);
+        $this->assertEquals(self::$db->count('test', ['id' => 1]), 0);
+        $this->assertEquals(self::$db->count('test'), 0);
+    }
+
     function test__flattened_args()
     {
         $id = self::$db->insert('test', ['col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz']);
@@ -359,6 +377,30 @@ trait BasicTest
         self::$db->delete_duplicates('test');
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 1);
         $this->assertEquals(self::$db->fetch_var('SELECT id FROM test LIMIT 1'), $id);
+        self::$db->clear('test');
+    }
+
+    function test__trim_values()
+    {
+        self::$db->insert('test', ['col1' => 'foo1 ', 'col2' => 'bar1', 'col3' => 'baz1']);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => ' bar2', 'col3' => 'baz2']);
+        self::$db->insert('test', ['col1' => 'foo2', 'col2' => ' bar2 ', 'col3' => ' baz2 ']);
+        $this->assertEquals(self::$db->trim_values(), [
+            ['table' => 'test', 'column' => 'col1', 'id' => 1, 'before' => 'foo1 ', 'after' => 'foo1'],
+            ['table' => 'test', 'column' => 'col2', 'id' => 2, 'before' => ' bar2', 'after' => 'bar2'],
+            ['table' => 'test', 'column' => 'col2', 'id' => 3, 'before' => ' bar2 ', 'after' => 'bar2'],
+            ['table' => 'test', 'column' => 'col3', 'id' => 3, 'before' => ' baz2 ', 'after' => 'baz2']
+        ]);
+        $this->assertEquals(count(self::$db->trim_values()), 4);
+        $this->assertEquals(count(self::$db->trim_values(false, ['test'])), 0);
+        $this->assertEquals(count(self::$db->trim_values(false, ['test' => ['col1', 'col2']])), 1);
+        $this->assertEquals(count(self::$db->trim_values(true)), 4);
+        $this->assertEquals(count(self::$db->trim_values(true)), 0);
+        $this->assertEquals(count(self::$db->trim_values()), 0);
+        $this->assertEquals(self::$db->fetch_var('SELECT col1 FROM test WHERE id = 1'), 'foo1');
+        $this->assertEquals(self::$db->fetch_var('SELECT col2 FROM test WHERE id = 2'), 'bar2');
+        $this->assertEquals(self::$db->fetch_var('SELECT col2 FROM test WHERE id = 3'), 'bar2');
+        $this->assertEquals(self::$db->fetch_var('SELECT col3 FROM test WHERE id = 3'), 'baz2');
         self::$db->clear('test');
     }
 

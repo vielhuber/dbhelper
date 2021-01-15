@@ -878,6 +878,123 @@ class dbhelper
         }
     }
 
+    public function count($table, $condition = [])
+    {
+        $query = '';
+        $query .= 'SELECT COUNT(*) FROM ';
+        $query .= $this->quote($table);
+        if (!empty($condition)) {
+            $query .= ' WHERE ';
+            foreach ($condition as $key => $value) {
+                $query .= $this->quote($key);
+                $query .= ' = ';
+                $query .= '? ';
+                end($condition);
+                if ($key !== key($condition)) {
+                    $query .= ' AND ';
+                }
+            }
+        }
+        $args = [];
+        if (!empty($condition)) {
+            foreach ($condition as $c) {
+                if ($c === true) {
+                    $c = 1;
+                }
+                if ($c === false) {
+                    $c = 0;
+                }
+                $args[] = $c;
+            }
+        }
+        return $this->fetch_var($query, $args);
+    }
+
+    public function trim_values($update = false, $ignore = [])
+    {
+        if (!empty($ignore)) {
+            $ignore_prev = $ignore;
+            foreach ($ignore_prev as $ignore_prev__key => $ignore_prev__value) {
+                if (is_string($ignore_prev__value)) {
+                    $ignore[$ignore_prev__value] = null;
+                } elseif (is_array($ignore_prev__value)) {
+                    $ignore[$ignore_prev__key] = $ignore_prev__value;
+                }
+            }
+        }
+        $return = [];
+        foreach ($this->get_tables() as $tables__value) {
+            $query = '';
+            $query .= 'SELECT * FROM ' . $tables__value . ' WHERE ';
+            $query_or = [];
+            foreach ($this->get_columns($tables__value) as $columns__value) {
+                if ($this->sql->engine === 'sqlite') {
+                    $query_or[] =
+                        'CAST(' .
+                        $this->quote($columns__value) .
+                        ' AS TEXT) LIKE \' %\' OR CAST(' .
+                        $this->quote($columns__value) .
+                        ' AS TEXT) LIKE \'% \'';
+                } else {
+                    $query_or[] =
+                        'CONCAT(' .
+                        $this->quote($columns__value) .
+                        ',\'\') LIKE \' %\' OR CONCAT(' .
+                        $this->quote($columns__value) .
+                        ',\'\') LIKE \'% \'';
+                }
+            }
+            $query .= implode(' OR ', $query_or);
+            $result = $this->fetch_all($query);
+            if (!empty($result)) {
+                foreach ($result as $result__value) {
+                    $id = $result__value[$this->get_primary_key($tables__value)];
+                    foreach ($result__value as $result__value__key => $result__value__value) {
+                        if (
+                            !preg_match('/^ .+$/', $result__value__value) &&
+                            !preg_match('/^.+ $/', $result__value__value)
+                        ) {
+                            continue;
+                        }
+                        if (
+                            !empty($ignore) &&
+                            array_key_exists($tables__value, $ignore) &&
+                            ($ignore[$tables__value] === null ||
+                                (is_array($ignore[$tables__value]) &&
+                                    in_array($result__value__key, $ignore[$tables__value])))
+                        ) {
+                            continue;
+                        }
+                        $return[] = [
+                            'table' => $tables__value,
+                            'column' => $result__value__key,
+                            'id' => $id,
+                            'before' => $result__value__value,
+                            'after' => trim($result__value__value)
+                        ];
+                        if ($update === true) {
+                            $this->update(
+                                $tables__value,
+                                [$result__value__key => trim($result__value__value)],
+                                [
+                                    $this->get_primary_key($tables__value) => $id,
+                                    $result__value__key => $result__value__value
+                                ]
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        usort($return, function ($a, $b) {
+            return strcmp(
+                $a['table'] . '.' . $a['column'] . '.' . $a['before'],
+                $b['table'] . '.' . $b['column'] . '.' . $a['before']
+            );
+        });
+        return $return;
+    }
+
     public function get_duplicates()
     {
         $duplicates_data = [];
