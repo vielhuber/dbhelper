@@ -1738,12 +1738,14 @@ class dbhelper
         fetch('SELECT * FROM table WHERE col1 IN (?) AND col2 IN (?) AND col4 IN (?,?) AND col4 IN (?,?,?)', 1, 2, 3, 7, 8, 3, 4, 5)
         */
         if (strpos($query, 'IN (') !== false || strpos($query, 'IN(') !== false) {
-            // find all ?s
-            $in_positions = $this->find_occurences($query, '?');
-            $in_index = 0;
             if (!empty($params)) {
+                $in_index = 0;
                 foreach ($params as $params__key => $params__value) {
-                    if (is_array($params__value) && count($params__value) > 0) {
+                    if (
+                        is_array($params__value) &&
+                        count($params__value) > 0 &&
+                        ((count($params) === 1 && substr_count($query, '?') === 1) || count($params) >= 2)
+                    ) {
                         $in_occurence = $this->find_nth_occurence($return, '?', $in_index);
                         if (substr($return, $in_occurence - 1, 3) == '(?)') {
                             $return =

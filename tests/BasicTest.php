@@ -163,6 +163,43 @@ trait BasicTest
             ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'],
             ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']
         ]);
+        $this->assertEquals(
+            self::$db->fetch_all(
+                'SELECT * FROM test WHERE col1 IN (?) OR col2 IN (?) OR col3 IN (?)',
+                'foo',
+                'bar',
+                'baz'
+            ),
+            [
+                ['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'],
+                ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'],
+                ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']
+            ]
+        );
+        $this->assertEquals(
+            self::$db->fetch_all('SELECT * FROM test WHERE col1 IN (?) OR col2 = ? OR col3 = ?', ['foo'], 'bar', 'baz'),
+            [
+                ['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'],
+                ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'],
+                ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']
+            ]
+        );
+        $this->assertEquals(
+            self::$db->fetch_all('SELECT * FROM test WHERE col1 IN (?) OR col2 = ? OR col3 = ?', ['foo', 'bar', 'baz']),
+            [
+                ['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'],
+                ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'],
+                ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']
+            ]
+        );
+        $this->assertEquals(
+            self::$db->fetch_all('SELECT * FROM test WHERE col1 IN (?,?) OR col2 = ?', ['foo', 'bar', 'baz']),
+            [
+                ['id' => 1, 'col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz'],
+                ['id' => 2, 'col1' => 'foo', 'col2' => 'baz', 'col3' => 'foo'],
+                ['id' => 3, 'col1' => 'foo', 'col2' => 'foo', 'col3' => 'bar']
+            ]
+        );
     }
 
     function test__null_values()
