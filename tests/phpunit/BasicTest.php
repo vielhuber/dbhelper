@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Tests\Phpunit;
 
 use vielhuber\dbhelper\dbhelper;
 
@@ -439,6 +439,12 @@ trait BasicTest
         $this->assertEquals(self::$db->fetch_var('SELECT col2 FROM test WHERE id = 3'), 'bar2');
         $this->assertEquals(self::$db->fetch_var('SELECT col3 FROM test WHERE id = 3'), 'baz2');
         self::$db->clear('test');
+    }
+
+    function test__has_table()
+    {
+        $this->assertEquals(self::$db->has_table('test'), true);
+        $this->assertEquals(self::$db->has_table('test2'), false);
     }
 
     function test__has_column()

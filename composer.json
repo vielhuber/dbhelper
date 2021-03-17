@@ -7,9 +7,9 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-	        "vielhuber\\dbhelper\\": "src/",
-            "Tests\\": "tests/"
-    	}
+            "vielhuber\\dbhelper\\": "src/",
+            "Tests\\Phpunit\\": "tests/phpunit/"
+        }
     },
     "require-dev": {
         "phpunit/phpunit": "^6.4"

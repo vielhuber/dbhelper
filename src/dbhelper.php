@@ -22,7 +22,8 @@ class dbhelper
         $username = null,
         $password = null,
         $database = null,
-        $port = 3306
+        $port = 3306,
+        $timeout = 60
     ) {
         switch ($driver) {
             case 'pdo':
@@ -34,7 +35,8 @@ class dbhelper
                         [
                             PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci',
                             PDO::ATTR_EMULATE_PREPARES => false,
-                            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+                            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                            PDO::ATTR_TIMEOUT => $timeout
                         ]
                     );
                 } elseif ($engine === 'postgres') {
@@ -47,7 +49,8 @@ class dbhelper
                 } elseif ($engine === 'sqlite') {
                     $sql = new PDO('sqlite:' . $host, null, null, [
                         PDO::ATTR_EMULATE_PREPARES => false,
-                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_TIMEOUT => $timeout
                     ]);
                 } else {
                     throw new \Exception('missing engine');
@@ -111,12 +114,13 @@ class dbhelper
         $username = null,
         $password = null,
         $database = null,
-        $port = 3306
+        $port = 3306,
+        $timeout = 60
     ) {
-        $this->connect($driver, $engine, $host, $username, $password, null, $port);
+        $this->connect($driver, $engine, $host, $username, $password, null, $port, $timeout);
         $this->create_database($database);
         $this->disconnect();
-        $this->connect($driver, $engine, $host, $username, $password, $database, $port);
+        $this->connect($driver, $engine, $host, $username, $password, $database, $port, $timeout);
     }
 
     public function delete_database($database)
@@ -369,7 +373,12 @@ class dbhelper
                 // this works certainly in all cases, EXCEPT when doing something like CREATE TABLE, CREATE TRIGGER, DROP TABLE, DROP TRIGGER
                 // that causes the error "Cannot execute queries while other unbuffered queries are active"
                 // therefore we switch in those cases to exec
-                if (stripos($query, 'CREATE') === 0 || stripos($query, 'DROP') === 0) {
+                if (
+                    stripos($query, 'CREATE') === 0 ||
+                    stripos($query, 'DROP') === 0 ||
+                    stripos($query, 'PRAGMA') === 0 ||
+                    stripos($query, 'BEGIN') === 0
+                ) {
                     $this->sql->exec($query);
                 } else {
                     $stmt = $this->sql->prepare($query);
@@ -814,6 +823,11 @@ class dbhelper
         return $return;
     }
 
+    public function has_table($table)
+    {
+        return in_array($table, $this->get_tables());
+    }
+
     public function has_column($table, $column)
     {
         return in_array($column, $this->get_columns($table));
@@ -907,7 +921,11 @@ class dbhelper
                 $args[] = $c;
             }
         }
-        return $this->fetch_var($query, $args);
+        $ret = $this->fetch_var($query, $args);
+        if (is_numeric($ret)) {
+            $ret = intval($ret);
+        }
+        return $ret;
     }
 
     public function trim_values($update = false, $ignore = [])

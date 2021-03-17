@@ -25,6 +25,7 @@ $db = new dbhelper();
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
 $db->connect('pdo', 'postgres', '127.0.0.1', 'username', 'password', 'database', 5432);
 $db->connect('pdo', 'sqlite', 'database.db');
+$db->connect('pdo', 'sqlite', 'database.db', null, null, null, null, 120); // specify a manual timeout of 120 seconds
 $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306); // database must not be available
 
 /* disconnect from database */
@@ -103,6 +104,7 @@ $db->last_insert_id();
 
 /* some more little helpers */
 $db->get_tables() // ['tablename', ...]
+$db->has_table('tablename') // true
 $db->get_columns('tablename') // ['col1', 'col2', ...]
 $db->has_column('tablename', 'col1') // true
 $db->get_datatype('tablename', 'col1') // varchar
@@ -237,11 +239,24 @@ $db->connect('wordpress');
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
 
+### sqlite locking
+
+sqlite is nice but database locking can be cumbersome.\
+dbhelper provides a default timeout of `60` seconds, which prevents most timeouts.\
+you can manually define a timeout in the `connect` function.\
+have a look at `tests/lock/run.php`.
+also consider enabling [WAL](https://sqlite.org/wal.html via `$db->query('PRAGMA journal_mode=WAL;');`.
+checkout the following sqlite lock tests:
+
+-   `php tests/lock/run.php 1`: runs into database locking
+-   `php tests/lock/run.php 120`: does not run into database locking
+
 ### return values
 
 as return values after fetching results dbhelper usually returns associative arrays.\
 if you use it with wordpress, objects are returned.\
 dbhelper throws exceptions on all occured errors.\
+on an `insert` operation, the primary key (id) is returned.\
 on any `delete`, `update` or even `query` operation, the number of affected rows are returned.
 
 ### static version

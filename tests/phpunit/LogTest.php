@@ -1,5 +1,5 @@
 <?php
-namespace Tests;
+namespace Tests\Phpunit;
 
 use vielhuber\dbhelper\dbhelper;
 
@@ -145,10 +145,7 @@ trait LogTest
         ]);
 
         $id = self::$db->insert('test', ['col2' => str_repeat('x', 5000)]);
-        $this->assertEquals(
-            self::$db->fetch_var('SELECT SUBSTRING(col2, 1, 3) FROM test WHERE id = ?', $id),
-            'xxx'
-        );
+        $this->assertEquals(self::$db->fetch_var('SELECT SUBSTRING(col2, 1, 3) FROM test WHERE id = ?', $id), 'xxx');
         $this->assertEquals(
             self::$db->fetch_var(
                 'SELECT SUBSTRING(log_value, 1, 3) FROM logs WHERE log_column = ? ORDER BY id DESC LIMIT 1',
@@ -163,10 +160,7 @@ trait LogTest
         $id = self::$db->insert('test', ['col1' => 'foo', 'updated_by' => 43]);
 
         self::$db->update('test', ['col1' => 'bar'], ['id' => $id]);
-        $this->assertEquals(
-            self::$db->fetch_var('SELECT updated_by FROM test ORDER BY id DESC LIMIT 1'),
-            42
-        );
+        $this->assertEquals(self::$db->fetch_var('SELECT updated_by FROM test ORDER BY id DESC LIMIT 1'), 42);
         $row = self::$db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1');
         unset($row['id']);
         unset($row['log_key']);
@@ -181,10 +175,7 @@ trait LogTest
         ]);
 
         self::$db->update('test', ['col1' => 'foo', 'updated_by' => 43], ['id' => $id]);
-        $this->assertEquals(
-            self::$db->fetch_var('SELECT updated_by FROM test ORDER BY id DESC LIMIT 1'),
-            43
-        );
+        $this->assertEquals(self::$db->fetch_var('SELECT updated_by FROM test ORDER BY id DESC LIMIT 1'), 43);
         $row = self::$db->fetch_row('SELECT * FROM logs ORDER BY id DESC LIMIT 1');
         unset($row['id']);
         unset($row['log_key']);

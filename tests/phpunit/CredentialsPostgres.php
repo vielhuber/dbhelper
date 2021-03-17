@@ -1,19 +1,19 @@
 <?php
-namespace Tests;
+namespace Tests\Phpunit;
 
 use vielhuber\dbhelper\dbhelper;
 
-trait CredentialsMysql
+trait CredentialsPostgres
 {
     public static function getCredentials()
     {
         return (object) [
             'driver' => 'pdo',
-            'engine' => 'mysql',
+            'engine' => 'postgres',
             'host' => '127.0.0.1',
-            'username' => 'root',
+            'username' => 'postgres',
             'password' => 'root',
-            'port' => 3306,
+            'port' => 5432,
             'database' => 'dbhelper'
         ];
     }

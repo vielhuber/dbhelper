@@ -9,7 +9,7 @@
         <testsuite
             name="dbhelper testsuite"
         >
-            <directory>tests</directory>
+            <directory>tests/phpunit</directory>
         </testsuite>
     </testsuites>
 </phpunit>

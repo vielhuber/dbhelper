@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Tests\Phpunit;
 
 use vielhuber\dbhelper\dbhelper;
 
