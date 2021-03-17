@@ -239,13 +239,12 @@ $db->connect('wordpress');
 $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 ```
 
-### sqlite locking
+### locking in sqlite
 
-sqlite is nice but database locking can be cumbersome.\
-dbhelper provides a default timeout of `60` seconds, which prevents most timeouts.\
+sqlite is nice but database locking can be tricky.\
+dbhelper provides a default timeout of `60` seconds, which prevents most database locks.\
 you can manually define a timeout in the `connect` function.\
-have a look at `tests/lock/run.php`.
-also consider enabling [WAL](https://sqlite.org/wal.html via `$db->query('PRAGMA journal_mode=WAL;');`.
+also consider enabling [WAL](https://sqlite.org/wal.html) via `$db->query('PRAGMA journal_mode=WAL;');`.\
 checkout the following sqlite lock tests:
 
 -   `php tests/lock/run.php 1`: runs into database locking
