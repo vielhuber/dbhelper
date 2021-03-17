@@ -243,12 +243,13 @@ $db->fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
 
 sqlite is nice but database locking can be tricky.\
 dbhelper provides a default timeout of `60` seconds, which prevents most database locks.\
-you can manually define a timeout in the `connect` function.\
-also consider enabling [WAL](https://sqlite.org/wal.html) via `$db->query('PRAGMA journal_mode=WAL;');`.\
+you can manually define a timeout in the `connect()` function.\
 checkout the following sqlite lock tests:
 
 -   `php tests/lock/run.php 1`: runs into database locking
 -   `php tests/lock/run.php 120`: does not run into database locking
+
+also consider enabling [wal](https://sqlite.org/wal.html) via `$db->query('PRAGMA journal_mode=WAL;');`.
 
 ### return values
 
