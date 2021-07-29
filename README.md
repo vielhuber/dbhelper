@@ -74,7 +74,7 @@ $db->create_table('tablename', [
     'col3' => 'varchar(255)'
 ]);
 
-/* create and connect to database if exists */
+/* create if not exists and connect to database */
 $db->connect_with_create('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
     // this is a shorthand for
     $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306);
