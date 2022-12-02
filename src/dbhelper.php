@@ -1260,6 +1260,12 @@ class dbhelper
             $$ language \'plpgsql\';
         ');
         $this->query(
+            'DROP TRIGGER IF EXISTS ' . $this->quote('auto_update_updated_at_column_on_insert') . ' ON ' . $this->config['logging_table']
+        );
+        $this->query(
+            'DROP TRIGGER IF EXISTS ' . $this->quote('auto_update_updated_at_column_on_update') . ' ON ' . $this->config['logging_table']
+        );
+        $this->query(
             'CREATE TRIGGER auto_update_updated_at_column_on_insert BEFORE INSERT ON ' .
                 $this->config['logging_table'] .
                 ' FOR EACH ROW EXECUTE PROCEDURE auto_update_updated_at_column();'
