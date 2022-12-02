@@ -8,7 +8,7 @@ trait LogSetup
     public static $db;
     public static $credentials;
 
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         self::$db = new dbhelper([
             'enable_logging' => true,
@@ -32,12 +32,12 @@ trait LogSetup
         );
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         self::$db->disconnect_with_delete();
     }
 
-    function setUp()
+    function setUp(): void
     {
         self::$db->clear(); // if something failed
         self::$db->create_table('test', [
@@ -58,7 +58,7 @@ trait LogSetup
         self::$db->enable_auto_inject();
     }
 
-    function tearDown()
+    function tearDown(): void
     {
         self::$db->clear();
     }

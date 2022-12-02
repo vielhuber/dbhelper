@@ -9,7 +9,7 @@ trait BasicSetup
     public static $db;
     public static $credentials;
 
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         self::$db = new dbhelper();
         self::$credentials = self::getCredentials();
@@ -24,12 +24,12 @@ trait BasicSetup
         );
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         self::$db->disconnect_with_delete();
     }
 
-    function setUp()
+    function setUp(): void
     {
         self::$db->clear(); // if something failed
         self::$db->create_table('test', [
@@ -40,7 +40,7 @@ trait BasicSetup
         ]);
     }
 
-    function tearDown()
+    function tearDown(): void
     {
         self::$db->clear();
     }

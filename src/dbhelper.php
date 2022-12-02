@@ -29,7 +29,7 @@ class dbhelper
             case 'pdo':
                 if ($engine === 'mysql') {
                     $sql = new PDO(
-                        'mysql:host=' . $host . ';port=' . $port . ($database !== null ? ';dbname=' . $database : ''),
+                        'mysql:host=' . $host . ';port=' . $port . ($database !== null ? ';dbname=' . $database : ';charset=utf8mb4'),
                         $username,
                         $password,
                         [
@@ -45,7 +45,7 @@ class dbhelper
                         $username,
                         $password
                     );
-                    $sql->query('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
+                    //$sql->query('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
                 } elseif ($engine === 'sqlite') {
                     $sql = new PDO('sqlite:' . $host, null, null, [
                         PDO::ATTR_EMULATE_PREPARES => false,
@@ -59,7 +59,7 @@ class dbhelper
                 break;
 
             case 'mysqli':
-                $sql = new mysqli($host, $username, $password, $database, $port);
+                $sql = new \mysqli($host, $username, $password, $database, $port);
                 mysqli_set_charset($sql, 'utf8mb4');
                 if ($sql->connect_errno) {
                     die('SQL Connection failed: ' . $sql->connect_error);
