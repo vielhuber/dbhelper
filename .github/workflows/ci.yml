@@ -9,6 +9,15 @@ jobs:
     build-test:
         runs-on: ubuntu-latest
 
+        # postgresql
+        services:
+            postgres:
+                image: postgres
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: root
+                options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
         steps:
             - name: Checkout
               uses: actions/checkout@v3
@@ -28,4 +37,4 @@ jobs:
               run: composer install --no-interaction
 
             - name: PHPUnit
-              run: ./vendor/bin/phpunit --filter BasicMySqlTest
+              run: ./vendor/bin/phpunit --filter BasicPostgresTest
