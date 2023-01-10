@@ -2,19 +2,23 @@ name: CI
 
 env:
     CI: true
+    SECRET_VARIABLE_1: ${{ secrets.SECRET_VARIABLE_1 }}
+    SECRET_VARIABLE_2: ${{ secrets.SECRET_VARIABLE_2 }}
+    SECRET_VARIABLE_3: ${{ secrets.SECRET_VARIABLE_3 }}
 
 on: [push]
 
 jobs:
     build-test:
-        runs-on: ${{ matrix.operating-system }}
-
         strategy:
             matrix:
-                operating-system: ['ubuntu-latest']
+                operating-system: ['ubuntu-latest', 'macos-latest', 'windows-latest']
                 php-versions: ['7.4', '8.0', '8.1']
+                node-versions: ['14.18.0', '16.17.0', '18.12.1', '19.3.0']
 
-        name: ${{ matrix.operating-system }} (PHP ${{ matrix.php-versions }})
+        runs-on: ${{ matrix.operating-system }}
+
+        name: ${{ matrix.operating-system }} (PHP ${{ matrix.php-versions }}, Node ${{ matrix.node-versions }})
 
         services:
             postgres:
@@ -27,21 +31,42 @@ jobs:
                 options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
         steps:
-            - name: Checkout
+            - name: Checkout code
               uses: actions/checkout@v3
 
-            - name: MySQL
+            - name: Install libraries
               run: |
-                  sudo systemctl start mysql.service
+                  if [ "$RUNNER_OS" == "Linux" ]; then
+                       sudo apt-get install -y coreutils
+                  elif [ "$RUNNER_OS" == "macOS" ]; then
+                       brew install coreutils
+                  elif [ "$RUNNER_OS" == "Windows" ]; then
+                       choco install important_windows_software
+                  fi
+              shell: bash
 
-            - name: PHP
+            - name: Install PHP
               uses: shivammathur/setup-php@v2
               with:
                   php-version: '${{ matrix.php-versions }}'
+                  extensions: mysqli, xdebug, mbstring, xmlrpc, gd, intl, xml, zip, soap, bcmath, imap, opcache, pgsql, pdo, imagick
                   tools: composer, phpunit
 
-            - name: Composer
+            - name: Install MySQL
+              run: |
+                  sudo systemctl start mysql.service
+
+            - name: Install Composer
               run: composer install --no-interaction
 
-            - name: PHPUnit
+            - name: Install Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '${{ matrix.node-versions }}'
+                  cache: 'npm'
+
+            - name: Install NPM
+              run: npm install
+
+            - name: PHP Tests
               run: ./vendor/bin/phpunit
