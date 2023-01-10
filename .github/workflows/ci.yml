@@ -1,0 +1,31 @@
+name: CI
+
+env:
+    CI: true
+
+on: [push]
+
+jobs:
+    build-test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+             - name: MySQL
+              run: |
+                sudo systemctl start mysql.service
+
+            - name: PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.1'
+                  extensions: gd
+                  tools: composer, phpunit
+
+            - name: Composer
+              run: composer install --no-interaction
+
+            - name: PHPUnit
+              run: ./vendor/bin/phpunit --filter BasicMySqlTest

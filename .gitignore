@@ -4,3 +4,4 @@ composer.lock
 package-lock.json
 /node_modules/
 /.phpunit.result.cache
+/bin/act
