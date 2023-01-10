@@ -1,3 +1,5 @@
+[![build status](https://github.com/vielhuber/dbhelper/actions/workflows/ci.yml/badge.svg)](https://github.com/vielhuber/dbhelper/actions)
+
 # 🍗 dbhelper 🍗
 
 dbhelper is a small php wrapper for mysql/postgres/sqlite databases.

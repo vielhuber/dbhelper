@@ -7,9 +7,15 @@ on: [push]
 
 jobs:
     build-test:
-        runs-on: ubuntu-latest
+        runs-on: ${{ matrix.operating-system }}
 
-        # postgres
+        strategy:
+            matrix:
+                operating-system: ['ubuntu-latest']
+                php-versions: ['7.4', '8.0', '8.1']
+
+        name: ${{ matrix.operating-system }} (Node ${{ matrix.node-versions }})
+
         services:
             postgres:
                 image: postgres
@@ -24,7 +30,6 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v3
 
-            # mysql
             - name: MySQL
               run: |
                   sudo systemctl start mysql.service
@@ -32,12 +37,11 @@ jobs:
             - name: PHP
               uses: shivammathur/setup-php@v2
               with:
-                  php-version: '8.1'
-                  extensions: gd
+                  php-version: '${{ matrix.php-versions }}'
                   tools: composer, phpunit
 
             - name: Composer
               run: composer install --no-interaction
 
             - name: PHPUnit
-              run: ./vendor/bin/phpunit --filter BasicSqliteTest
+              run: ./vendor/bin/phpunit
