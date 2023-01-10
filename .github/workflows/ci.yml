@@ -9,7 +9,7 @@ jobs:
     build-test:
         runs-on: ubuntu-latest
 
-        # postgresql
+        # postgres
         services:
             postgres:
                 image: postgres
@@ -24,6 +24,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v3
 
+            # mysql
             - name: MySQL
               run: |
                   sudo systemctl start mysql.service
@@ -39,4 +40,4 @@ jobs:
               run: composer install --no-interaction
 
             - name: PHPUnit
-              run: ./vendor/bin/phpunit --filter BasicPostgresTest
+              run: ./vendor/bin/phpunit --filter BasicSqliteTest
