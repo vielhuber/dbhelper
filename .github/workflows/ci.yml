@@ -13,9 +13,9 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v3
 
-             - name: MySQL
+            - name: MySQL
               run: |
-                sudo systemctl start mysql.service
+                  sudo systemctl start mysql.service
 
             - name: PHP
               uses: shivammathur/setup-php@v2
