@@ -14,7 +14,7 @@ jobs:
                 operating-system: ['ubuntu-latest']
                 php-versions: ['7.4', '8.0', '8.1']
 
-        name: ${{ matrix.operating-system }} (Node ${{ matrix.node-versions }})
+        name: ${{ matrix.operating-system }} (PHP ${{ matrix.php-versions }})
 
         services:
             postgres:
