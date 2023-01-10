@@ -688,14 +688,14 @@ class dbhelper
     {
         if ($this->sql->engine === 'mysql') {
             return $this->fetch_col(
-                'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
+                'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? ORDER BY ORDINAL_POSITION',
                 'def',
                 $this->sql->database,
                 $table
             );
         } elseif ($this->sql->engine === 'postgres') {
             return $this->fetch_col(
-                'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ?',
+                'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? ORDER BY ORDINAL_POSITION',
                 $this->sql->database,
                 'public',
                 $table
