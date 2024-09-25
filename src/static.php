@@ -64,6 +64,11 @@ function db_delete($table, $conditions)
     global $db;
     return $db->delete($table, $conditions);
 }
+function db_count($table, $condition = [])
+{
+    global $db;
+    return $db->count($table, $condition);
+}
 function db_last_insert_id()
 {
     global $db;
