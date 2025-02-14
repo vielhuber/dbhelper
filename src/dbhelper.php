@@ -8,6 +8,8 @@ class dbhelper
 {
     public $sql = null;
 
+    public $connect = null;
+
     public $config = false;
 
     public function __construct($config = [])
@@ -25,6 +27,7 @@ class dbhelper
         $port = 3306,
         $timeout = 60
     ) {
+        $connect = (object) [];
         switch ($driver) {
             case 'pdo':
                 if ($engine === 'mysql') {
@@ -59,7 +62,7 @@ class dbhelper
                 } else {
                     throw new \Exception('missing engine');
                 }
-                $sql->database = $database;
+                $connect->database = $database;
                 break;
 
             case 'mysqli':
@@ -68,7 +71,7 @@ class dbhelper
                 if ($sql->connect_errno) {
                     die('SQL Connection failed: ' . $sql->connect_error);
                 }
-                $sql->database = $database;
+                $connect->database = $database;
                 break;
 
             case 'wordpress':
@@ -77,27 +80,29 @@ class dbhelper
                 $wpdb->show_errors = true;
                 $wpdb->suppress_errors = false;
                 $sql = $wpdb;
-                $sql->database = $wpdb->dbname;
+                $connect->database = $wpdb->dbname;
                 break;
         }
-        $sql->driver = $driver;
-        $sql->engine = $engine;
-        $sql->host = $host;
-        $sql->username = $username;
-        $sql->password = $password;
-        $sql->port = $port;
         $this->sql = $sql;
+
+        $connect->driver = $driver;
+        $connect->engine = $engine;
+        $connect->host = $host;
+        $connect->username = $username;
+        $connect->password = $password;
+        $connect->port = $port;
+        $this->connect = $connect;
     }
 
     public function create_database($database)
     {
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
-                if ($this->sql->engine === 'mysql') {
+                if ($this->connect->engine === 'mysql') {
                     $this->sql->exec('CREATE DATABASE IF NOT EXISTS ' . $database . ';');
-                } elseif ($this->sql->engine === 'postgres') {
+                } elseif ($this->connect->engine === 'postgres') {
                     $this->sql->exec('CREATE DATABASE ' . $database . ';');
-                } elseif ($this->sql->engine === 'sqlite') {
+                } elseif ($this->connect->engine === 'sqlite') {
                     @touch($database);
                 }
                 break;
@@ -129,13 +134,13 @@ class dbhelper
 
     public function delete_database($database)
     {
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
-                if ($this->sql->engine === 'mysql') {
+                if ($this->connect->engine === 'mysql') {
                     $this->sql->exec('DROP DATABASE ' . $database . ';');
-                } elseif ($this->sql->engine === 'postgres') {
+                } elseif ($this->connect->engine === 'postgres') {
                     $this->sql->exec('DROP DATABASE ' . $database . ';');
-                } elseif ($this->sql->engine === 'sqlite') {
+                } elseif ($this->connect->engine === 'sqlite') {
                     @unlink($database);
                 }
                 break;
@@ -148,19 +153,19 @@ class dbhelper
 
     public function disconnect_with_delete()
     {
-        $driver = $this->sql->driver;
-        $engine = $this->sql->engine;
-        $host = $this->sql->host;
-        $username = $this->sql->username;
-        $password = $this->sql->password;
-        $database = $this->sql->database;
-        $port = $this->sql->port;
+        $driver = $this->connect->driver;
+        $engine = $this->connect->engine;
+        $host = $this->connect->host;
+        $username = $this->connect->username;
+        $password = $this->connect->password;
+        $database = $this->connect->database;
+        $port = $this->connect->port;
         $this->disconnect();
         if ($driver === 'pdo' && $engine === 'sqlite') {
             $this->sql = (object) [];
-            $this->sql->driver = $driver;
-            $this->sql->engine = $engine;
-            $this->sql->host = $host;
+            $this->connect->driver = $driver;
+            $this->connect->engine = $engine;
+            $this->connect->host = $host;
             $this->delete_database($host);
         } else {
             $this->connect($driver, $engine, $host, $username, $password, null, $port);
@@ -171,7 +176,7 @@ class dbhelper
 
     public function disconnect()
     {
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
                 $this->sql = null;
                 break;
@@ -192,9 +197,9 @@ class dbhelper
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
-        list($query, $params) = $this->preparse_query($query, $params);
+        [$query, $params] = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
@@ -234,9 +239,9 @@ class dbhelper
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
-        list($query, $params) = $this->preparse_query($query, $params);
+        [$query, $params] = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
@@ -272,9 +277,9 @@ class dbhelper
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
-        list($query, $params) = $this->preparse_query($query, $params);
+        [$query, $params] = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
@@ -317,9 +322,9 @@ class dbhelper
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
-        list($query, $params) = $this->preparse_query($query, $params);
+        [$query, $params] = $this->preparse_query($query, $params);
 
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
                 $stmt = $this->sql->prepare($query);
                 $stmt->execute($params);
@@ -365,13 +370,13 @@ class dbhelper
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
-        list($query, $params) = $this->preparse_query($query, $params);
+        [$query, $params] = $this->preparse_query($query, $params);
 
         if (isset($this->config['auto_inject']) && $this->config['auto_inject'] === true) {
             $query = $this->handle_logging($query, $params);
         }
 
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
                 // in general we use prepare/execute instead of exec or query
                 // this works certainly in all cases, EXCEPT when doing something like CREATE TABLE, CREATE TRIGGER, DROP TABLE, DROP TRIGGER
@@ -456,13 +461,13 @@ class dbhelper
         // mysql returns the last inserted id inside the current session, obviously ignoring triggers
         // on postgres we cannot use LASTVAL(), because it returns the last id of possibly inserted rows caused by triggers
         // see: https://stackoverflow.com/questions/51558021/mysql-postgres-last-insert-id-lastval-different-behaviour
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             return $this->last_insert_id();
         }
-        if ($this->sql->engine === 'postgres') {
+        if ($this->connect->engine === 'postgres') {
             return $this->last_insert_id($table, $this->get_primary_key($table));
         }
-        if ($this->sql->engine === 'sqlite') {
+        if ($this->connect->engine === 'sqlite') {
             return $this->last_insert_id();
         }
     }
@@ -470,16 +475,16 @@ class dbhelper
     public function last_insert_id($table = null, $column = null)
     {
         $last_insert_id = null;
-        switch ($this->sql->driver) {
+        switch ($this->connect->driver) {
             case 'pdo':
-                if ($this->sql->engine == 'mysql') {
+                if ($this->connect->engine == 'mysql') {
                     try {
                         $last_insert_id = $this->fetch_var('SELECT LAST_INSERT_ID();');
                     } catch (\Exception $e) {
                         $last_insert_id = null;
                     }
                 }
-                if ($this->sql->engine == 'postgres') {
+                if ($this->connect->engine == 'postgres') {
                     try {
                         if ($table === null || $column === null) {
                             $last_insert_id = $this->fetch_var('SELECT LASTVAL();');
@@ -492,7 +497,7 @@ class dbhelper
                         $last_insert_id = null;
                     }
                 }
-                if ($this->sql->engine == 'sqlite') {
+                if ($this->connect->engine == 'sqlite') {
                     try {
                         $last_insert_id = $this->fetch_var('SELECT last_insert_rowid();');
                     } catch (\Exception $e) {
@@ -612,11 +617,11 @@ class dbhelper
     public function clear($table = null)
     {
         if ($table === null) {
-            if ($this->sql->engine === 'mysql') {
+            if ($this->connect->engine === 'mysql') {
                 $this->query('SET FOREIGN_KEY_CHECKS = 0');
                 $tables = $this->fetch_col(
                     'SELECT table_name FROM information_schema.tables WHERE table_schema = ?',
-                    $this->sql->database
+                    $this->connect->database
                 );
                 if (!empty($tables)) {
                     foreach ($tables as $tables__value) {
@@ -624,23 +629,23 @@ class dbhelper
                     }
                 }
                 $this->query('SET FOREIGN_KEY_CHECKS = 1');
-            } elseif ($this->sql->engine === 'postgres') {
+            } elseif ($this->connect->engine === 'postgres') {
                 $this->query('DROP SCHEMA public CASCADE');
                 $this->query('CREATE SCHEMA public');
-            } elseif ($this->sql->engine === 'sqlite') {
-                $db_driver = $this->sql->driver;
-                $db_engine = $this->sql->engine;
-                $db_file = $this->sql->host;
+            } elseif ($this->connect->engine === 'sqlite') {
+                $db_driver = $this->connect->driver;
+                $db_engine = $this->connect->engine;
+                $db_file = $this->connect->host;
                 $this->disconnect();
                 unlink($db_file);
                 $this->connect($db_driver, $db_engine, $db_file);
             }
         } else {
-            if ($this->sql->engine === 'mysql') {
+            if ($this->connect->engine === 'mysql') {
                 $this->query('TRUNCATE TABLE ' . $table);
-            } elseif ($this->sql->engine === 'postgres') {
+            } elseif ($this->connect->engine === 'postgres') {
                 $this->query('TRUNCATE TABLE ' . $table . ' RESTART IDENTITY');
-            } elseif ($this->sql->engine === 'sqlite') {
+            } elseif ($this->connect->engine === 'sqlite') {
                 $this->query('DELETE FROM ' . $table);
                 $this->query('VACUUM');
             }
@@ -671,40 +676,40 @@ class dbhelper
 
     public function get_tables()
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             return $this->fetch_col(
                 'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
                 'def',
-                $this->sql->database
+                $this->connect->database
             );
-        } elseif ($this->sql->engine === 'postgres') {
+        } elseif ($this->connect->engine === 'postgres') {
             return $this->fetch_col(
                 'SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? ORDER BY table_name',
-                $this->sql->database,
+                $this->connect->database,
                 'public'
             );
-        } elseif ($this->sql->engine === 'sqlite') {
+        } elseif ($this->connect->engine === 'sqlite') {
             return $this->fetch_col('SELECT name FROM sqlite_master WHERE type = ?', 'table');
         }
     }
 
     public function get_columns($table)
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             return $this->fetch_col(
                 'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? ORDER BY ORDINAL_POSITION',
                 'def',
-                $this->sql->database,
+                $this->connect->database,
                 $table
             );
-        } elseif ($this->sql->engine === 'postgres') {
+        } elseif ($this->connect->engine === 'postgres') {
             return $this->fetch_col(
                 'SELECT column_name FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? ORDER BY ORDINAL_POSITION',
-                $this->sql->database,
+                $this->connect->database,
                 'public',
                 $table
             );
-        } elseif ($this->sql->engine === 'sqlite') {
+        } elseif ($this->connect->engine === 'sqlite') {
             $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
             $cols = [];
             foreach ($pragma as $pragma__value) {
@@ -716,7 +721,7 @@ class dbhelper
 
     public function get_foreign_keys($table)
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             $return = [];
             $cols = $this->fetch_all(
                 '
@@ -724,8 +729,8 @@ class dbhelper
                         kcu.column_name AS column_name,
                         kcu.referenced_table_name as foreign_table_name,
                         kcu.referenced_column_name as foreign_column_name
-                    FROM 
-                        information_schema.table_constraints AS tc 
+                    FROM
+                        information_schema.table_constraints AS tc
                         JOIN information_schema.key_column_usage AS kcu
                         ON tc.constraint_name = kcu.constraint_name
                         AND tc.table_schema = kcu.table_schema
@@ -735,7 +740,7 @@ class dbhelper
                         tc.table_name = ?
                 ',
                 'FOREIGN KEY',
-                $this->sql->database,
+                $this->connect->database,
                 $table
             );
             foreach ($cols as $cols__value) {
@@ -745,16 +750,16 @@ class dbhelper
                 ];
             }
             return $return;
-        } elseif ($this->sql->engine === 'postgres') {
+        } elseif ($this->connect->engine === 'postgres') {
             $return = [];
             $cols = $this->fetch_all(
                 '
                     SELECT
-                        kcu.column_name AS column_name, 
+                        kcu.column_name AS column_name,
                         ccu.table_name AS foreign_table_name,
-                        ccu.column_name AS foreign_column_name 
-                    FROM 
-                        information_schema.table_constraints AS tc 
+                        ccu.column_name AS foreign_column_name
+                    FROM
+                        information_schema.table_constraints AS tc
                         JOIN information_schema.key_column_usage AS kcu
                         ON tc.constraint_name = kcu.constraint_name
                         AND tc.table_schema = kcu.table_schema
@@ -768,7 +773,7 @@ class dbhelper
                         tc.table_name = ?
                 ',
                 'FOREIGN KEY',
-                $this->sql->database,
+                $this->connect->database,
                 'public',
                 $table
             );
@@ -779,7 +784,7 @@ class dbhelper
                 ];
             }
             return $return;
-        } elseif ($this->sql->engine === 'sqlite') {
+        } elseif ($this->connect->engine === 'sqlite') {
             $pragma = $this->fetch_all('PRAGMA foreign_key_list(' . $this->quote($table) . ');');
             $return = [];
             foreach ($pragma as $pragma__value) {
@@ -839,23 +844,23 @@ class dbhelper
 
     public function get_datatype($table, $column)
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             return $this->fetch_var(
                 'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
                 'def',
-                $this->sql->database,
+                $this->connect->database,
                 $table,
                 $column
             );
-        } elseif ($this->sql->engine === 'postgres') {
+        } elseif ($this->connect->engine === 'postgres') {
             return $this->fetch_var(
                 'SELECT data_type FROM information_schema.columns WHERE table_catalog = ? AND table_schema = ? AND table_name = ? and column_name = ?',
-                $this->sql->database,
+                $this->connect->database,
                 'public',
                 $table,
                 $column
             );
-        } elseif ($this->sql->engine === 'sqlite') {
+        } elseif ($this->connect->engine === 'sqlite') {
             $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
             foreach ($pragma as $pragma__value) {
                 if ($pragma__value['name'] === $column) {
@@ -869,20 +874,20 @@ class dbhelper
     public function get_primary_key($table)
     {
         try {
-            if ($this->sql->engine === 'mysql') {
+            if ($this->connect->engine === 'mysql') {
                 return ((object) $this->fetch_row(
                     'SHOW KEYS FROM ' . $this->quote($table) . ' WHERE Key_name = ?',
                     'PRIMARY'
                 ))->Column_name;
             }
-            if ($this->sql->engine === 'postgres') {
+            if ($this->connect->engine === 'postgres') {
                 return $this->fetch_var(
                     'SELECT pg_attribute.attname FROM pg_index JOIN pg_attribute ON pg_attribute.attrelid = pg_index.indrelid AND pg_attribute.attnum = ANY(pg_index.indkey) WHERE pg_index.indrelid = \'' .
                         $table .
                         '\'::regclass AND pg_index.indisprimary'
                 );
             }
-            if ($this->sql->engine === 'sqlite') {
+            if ($this->connect->engine === 'sqlite') {
                 $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
                 foreach ($pragma as $pragma__value) {
                     if ($pragma__value['pk'] == 1) {
@@ -950,7 +955,7 @@ class dbhelper
             $query .= 'SELECT * FROM ' . $tables__value . ' WHERE ';
             $query_or = [];
             foreach ($this->get_columns($tables__value) as $columns__value) {
-                if ($this->sql->engine === 'sqlite') {
+                if ($this->connect->engine === 'sqlite') {
                     $query_or[] =
                         'CAST(' .
                         $this->quote($columns__value) .
@@ -1103,7 +1108,7 @@ class dbhelper
                     }
                     // postgres and sqlite do a case sensitive group by by default
                     // on mysql we need the following modification
-                    if ($this->sql->engine === 'mysql') {
+                    if ($this->connect->engine === 'mysql') {
                         // variant 1: Cast as binary (we use md5, because its neater)
                         //$ret .= 'CAST(';
                         // variant 2: MD5 trick
@@ -1116,7 +1121,7 @@ class dbhelper
                     if ($case_sensitivity === false) {
                         $ret .= ')';
                     }
-                    if ($this->sql->engine === 'mysql') {
+                    if ($this->connect->engine === 'mysql') {
                         //$ret .= ' AS BINARY)';
                         $ret .= ')';
                     }
@@ -1155,7 +1160,7 @@ class dbhelper
                 }
                 // postgres and sqlite do a case sensitive group by by default
                 // on mysql we need the following modification
-                if ($this->sql->engine === 'mysql') {
+                if ($this->connect->engine === 'mysql') {
                     // variant 1: Cast as binary (we use md5, because its neater)
                     //$ret .= 'CAST(';
                     // variant 2: MD5 trick
@@ -1168,7 +1173,7 @@ class dbhelper
                 if ($case_sensitivity === false) {
                     $ret .= ')';
                 }
-                if ($this->sql->engine === 'mysql') {
+                if ($this->connect->engine === 'mysql') {
                     //$ret .= ' AS BINARY)';
                     $ret .= ')';
                 }
@@ -1190,12 +1195,12 @@ class dbhelper
 
     public function setup_logging()
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             $this->setup_logging_create_table_mysql();
             $this->setup_logging_add_column();
             $this->setup_logging_create_triggers_mysql();
         }
-        if ($this->sql->engine === 'postgres') {
+        if ($this->connect->engine === 'postgres') {
             $this->setup_logging_create_table_postgres();
             $this->setup_logging_add_column();
             $this->setup_logging_create_triggers_postgres();
@@ -1255,11 +1260,11 @@ class dbhelper
         '
         );
         $this->query('
-            CREATE OR REPLACE FUNCTION auto_update_updated_at_column() 
+            CREATE OR REPLACE FUNCTION auto_update_updated_at_column()
             RETURNS TRIGGER AS $$
             BEGIN
                 NEW.updated_at = now();
-                RETURN NEW; 
+                RETURN NEW;
             END;
             $$ language \'plpgsql\';
         ');
@@ -1309,12 +1314,12 @@ class dbhelper
     public function disable_logging()
     {
         foreach ($this->get_tables() as $table__value) {
-            if ($this->sql->engine === 'mysql') {
+            if ($this->connect->engine === 'mysql') {
                 $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value));
                 $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value));
                 $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value));
             }
-            if ($this->sql->engine === 'postgres') {
+            if ($this->connect->engine === 'postgres') {
                 $this->query(
                     'DROP TRIGGER IF EXISTS ' .
                         $this->quote('trigger-logging-insert-' . $table__value) .
@@ -1339,10 +1344,10 @@ class dbhelper
 
     public function enable_logging()
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             $this->setup_logging_create_triggers_mysql();
         }
-        if ($this->sql->engine === 'postgres') {
+        if ($this->connect->engine === 'postgres') {
             $this->setup_logging_create_triggers_postgres();
         }
     }
@@ -1370,7 +1375,7 @@ class dbhelper
             /* note: we do not use DELIMITER $$ here, because php in mysql can handle that anyways because it does not execute multiple queries */
 
             $query =
-                '                
+                '
                 CREATE TRIGGER ' .
                 $this->quote('trigger-logging-insert-' . $table__value) .
                 '
@@ -1493,7 +1498,7 @@ class dbhelper
             $this->query($query);
 
             $query =
-                '                
+                '
                 CREATE TRIGGER ' .
                 $this->quote('trigger-logging-delete-' . $table__value) .
                 '
@@ -1567,7 +1572,7 @@ class dbhelper
                 '
                 CREATE OR REPLACE FUNCTION trigger_logging_insert_' .
                 $table__value .
-                '() 
+                '()
                 RETURNS TRIGGER AS $$
                 DECLARE
                     uuid TEXT;
@@ -1635,7 +1640,7 @@ class dbhelper
                 '
                 CREATE OR REPLACE FUNCTION trigger_logging_update_' .
                 $table__value .
-                '() 
+                '()
                 RETURNS TRIGGER AS $$
                 DECLARE
                     uuid TEXT;
@@ -1716,7 +1721,7 @@ class dbhelper
                 '
                 CREATE OR REPLACE FUNCTION trigger_logging_delete_' .
                 $table__value .
-                '() 
+                '()
                 RETURNS TRIGGER AS $$
                 DECLARE
                     uuid TEXT;
@@ -1866,7 +1871,7 @@ class dbhelper
         $params = array_values($params);
 
         // WordPress: replace ? with %s
-        if ($this->sql->driver == 'wordpress') {
+        if ($this->connect->driver == 'wordpress') {
             foreach ($params as $params__key => $params__value) {
                 // replace next occurence
                 if (strpos($return, '?') !== false) {
@@ -1886,7 +1891,7 @@ class dbhelper
         }
 
         // WordPress: pass stripslashes_deep to all parameters (wordpress always adds slashes to them)
-        if ($this->sql->driver == 'wordpress') {
+        if ($this->connect->driver == 'wordpress') {
             $params = stripslashes_deep($params);
         }
 
@@ -1901,7 +1906,7 @@ class dbhelper
         $params = func_get_args();
         unset($params[0]);
         $params = array_values($params);
-        list($query, $params) = $this->preparse_query($query, $params);
+        [$query, $params] = $this->preparse_query($query, $params);
 
         $keys = [];
         $values = $params;
@@ -2082,13 +2087,13 @@ class dbhelper
 
     public function quote($name)
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             return '`' . $name . '`';
         }
-        if ($this->sql->engine === 'postgres') {
+        if ($this->connect->engine === 'postgres') {
             return '"' . $name . '"';
         }
-        if ($this->sql->engine === 'sqlite') {
+        if ($this->connect->engine === 'sqlite') {
             return '"' . $name . '"';
         }
     }
@@ -2100,13 +2105,13 @@ class dbhelper
 
     private function uuid_query()
     {
-        if ($this->sql->engine === 'mysql') {
+        if ($this->connect->engine === 'mysql') {
             return 'UUID()';
         }
-        if ($this->sql->engine === 'postgres') {
+        if ($this->connect->engine === 'postgres') {
             return 'uuid_in(md5(random()::text || now()::text)::cstring)';
         }
-        if ($this->sql->engine === 'sqlite') {
+        if ($this->connect->engine === 'sqlite') {
             return "substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12) from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)";
         }
     }
