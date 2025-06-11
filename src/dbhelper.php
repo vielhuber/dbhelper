@@ -407,8 +407,10 @@ class dbhelper
             case 'wordpress':
                 if (!empty($params)) {
                     $data = $this->sql->query($this->sql->prepare($query, $params));
+                    return $this->sql->rows_affected;
                 } else {
                     $data = $this->sql->query($query);
+                    return $this->sql->rows_affected;
                 }
                 if ($this->sql->last_error) {
                     throw new \Exception($this->sql->last_error);
