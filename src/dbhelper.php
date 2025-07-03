@@ -28,6 +28,7 @@ class dbhelper
         $timeout = 60
     ) {
         $connect = (object) [];
+        $sql = null;
         switch ($driver) {
             case 'pdo':
                 if ($engine === 'mysql') {
@@ -77,7 +78,7 @@ class dbhelper
             case 'wordpress':
                 global $wpdb;
                 $engine = 'mysql';
-                $wpdb->show_errors = true;
+                $wpdb->show_errors = false; // do not show errors in the frontend, we fire exceptions instead
                 $wpdb->suppress_errors = false;
                 $sql = $wpdb;
                 $connect->database = $wpdb->dbname;
@@ -406,14 +407,17 @@ class dbhelper
 
             case 'wordpress':
                 if (!empty($params)) {
-                    $data = $this->sql->query($this->sql->prepare($query, $params));
+                    $this->sql->query($this->sql->prepare($query, $params));
+                    if ($this->sql->last_error) {
+                        throw new \Exception($this->sql->last_error);
+                    }
                     return $this->sql->rows_affected;
                 } else {
-                    $data = $this->sql->query($query);
+                    $this->sql->query($query);
+                    if ($this->sql->last_error) {
+                        throw new \Exception($this->sql->last_error);
+                    }
                     return $this->sql->rows_affected;
-                }
-                if ($this->sql->last_error) {
-                    throw new \Exception($this->sql->last_error);
                 }
                 break;
         }
