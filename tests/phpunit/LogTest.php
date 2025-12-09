@@ -5,6 +5,8 @@ use vielhuber\dbhelper\dbhelper;
 
 trait LogTest
 {
+    public static $db;
+
     function test__insert()
     {
         $id = self::$db->insert('test', ['col1' => 'foo1']);

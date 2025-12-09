@@ -1,8 +1,4 @@
 {
-    "name": "",
-    "description": "",
-    "version": "0.1.0",
-    "dependencies": {},
     "devDependencies": {
         "@prettier/plugin-php": ">=0.22",
         "prettier": ">=3"

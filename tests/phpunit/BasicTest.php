@@ -6,6 +6,9 @@ use vielhuber\dbhelper\dbhelper;
 
 trait BasicTest
 {
+    public static $db;
+    public static $credentials;
+
     function test__insert()
     {
         $id = self::$db->insert('test', ['col1' => 'foo']);
@@ -298,6 +301,17 @@ trait BasicTest
     {
         $id = self::$db->insert('test', ['col1' => 'foo']);
         $this->assertEquals($id, self::$db->last_insert_id());
+    }
+
+    function test__insert_with_uuid()
+    {
+        self::$db->create_table('test_uuid', [
+            'id' => 'varchar(36) PRIMARY KEY',
+            'col1' => 'varchar(255)'
+        ]);
+        $uuid = 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6';
+        $id = self::$db->insert('test_uuid', ['id' => $uuid, 'col1' => 'foo']);
+        $this->assertEquals($id, $uuid);
     }
 
     function test__get_tables()

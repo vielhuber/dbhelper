@@ -464,6 +464,14 @@ class dbhelper
         }
         $ret = call_user_func_array([$this, 'query'], $args);
 
+        // if we created an item without an auto-incremented primary key,
+        // sql does not return the last inserted id properly.
+        // we instead return the data already delivered!
+        $primary_key = $this->get_primary_key($table);
+        if ($primary_key && isset($data[0]) && isset($data[0][$primary_key])) {
+            return $data[0][$primary_key];
+        }
+
         // mysql returns the last inserted id inside the current session, obviously ignoring triggers
         // on postgres we cannot use LASTVAL(), because it returns the last id of possibly inserted rows caused by triggers
         // see: https://stackoverflow.com/questions/51558021/mysql-postgres-last-insert-id-lastval-different-behaviour
