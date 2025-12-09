@@ -1,18 +1,10 @@
 {
     "singleQuote": true,
-    "overrides": [
-        {
-            "files": ["**/*.css", "**/*.scss"],
-            "options": {
-                "singleQuote": false
-            }
-        }
-    ],
     "tabWidth": 4,
     "printWidth": 120,
     "trailingComma": "none",
     "trailingCommaPHP": false,
     "arrowParens": "avoid",
     "phpVersion": "8.2",
-    "plugins": ["@prettier/plugin-php", "prettier-plugin-sh"]
+    "plugins": ["@prettier/plugin-php"]
 }
