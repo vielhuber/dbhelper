@@ -670,7 +670,7 @@ class dbhelper
         $query .= $table . ' ';
         $query .= '(';
         foreach ($cols as $cols__key => $cols__value) {
-            $query .= $cols__key;
+            $query .= $this->quote($cols__key);
             $query .= ' ';
             $query .= $cols__value;
             $query .= ',';
