@@ -670,7 +670,13 @@ class dbhelper
         $query .= $table . ' ';
         $query .= '(';
         foreach ($cols as $cols__key => $cols__value) {
-            $query .= $this->quote($cols__key);
+            // quote "bar" in FOO (bar)
+            if (preg_match('/(.*)\((.*)\)(.*)/', $cols__key, $matches)) {
+                $cols__key = $matches[1] . '(' . $this->quote($matches[2]) . ')' . $matches[3];
+            } else {
+                $cols__key = $this->quote($cols__key);
+            }
+            $query .= $cols__key;
             $query .= ' ';
             $query .= $cols__value;
             $query .= ',';
