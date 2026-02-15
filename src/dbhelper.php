@@ -33,7 +33,7 @@ class dbhelper
             case 'pdo':
                 if ($engine === 'mysql') {
                     $initCommandAttribute = defined('\Pdo\\Mysql::ATTR_INIT_COMMAND')
-                        ? \Pdo\\Mysql::ATTR_INIT_COMMAND
+                        ? \Pdo\Mysql::ATTR_INIT_COMMAND
                         : PDO::MYSQL_ATTR_INIT_COMMAND;
                     $sql = new PDO(
                         'mysql:host=' .
