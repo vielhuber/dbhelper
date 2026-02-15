@@ -3,7 +3,6 @@
 namespace vielhuber\dbhelper;
 
 use PDO;
-use Pdo\Mysql;
 
 class dbhelper
 {
@@ -33,6 +32,9 @@ class dbhelper
         switch ($driver) {
             case 'pdo':
                 if ($engine === 'mysql') {
+                    $initCommandAttribute = defined('\Pdo\\Mysql::ATTR_INIT_COMMAND')
+                        ? \Pdo\\Mysql::ATTR_INIT_COMMAND
+                        : PDO::MYSQL_ATTR_INIT_COMMAND;
                     $sql = new PDO(
                         'mysql:host=' .
                             $host .
@@ -42,7 +44,7 @@ class dbhelper
                         $username,
                         $password,
                         [
-                            Mysql::ATTR_INIT_COMMAND => 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci',
+                            $initCommandAttribute => 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci',
                             PDO::ATTR_EMULATE_PREPARES => false,
                             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                             PDO::ATTR_TIMEOUT => $timeout
