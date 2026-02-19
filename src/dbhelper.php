@@ -107,7 +107,11 @@ class dbhelper
                 } elseif ($this->connect->engine === 'postgres') {
                     $this->sql->exec('CREATE DATABASE ' . $database . ';');
                 } elseif ($this->connect->engine === 'sqlite') {
-                    @touch($database);
+                    if (!file_exists($database)) {
+                        touch($database);
+                        chmod($database, 0664);
+                        chmod(dirname($database), 0775);
+                    }
                 }
                 break;
 
@@ -131,7 +135,7 @@ class dbhelper
         $timeout = 60
     ) {
         $this->connect($driver, $engine, $host, $username, $password, null, $port, $timeout);
-        $this->create_database($database);
+        $this->create_database($engine === 'sqlite' ? $engine : $database);
         $this->disconnect();
         $this->connect($driver, $engine, $host, $username, $password, $database, $port, $timeout);
     }
