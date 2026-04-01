@@ -1,4 +1,10 @@
 [![build status](https://github.com/vielhuber/dbhelper/actions/workflows/ci.yml/badge.svg)](https://github.com/vielhuber/dbhelper/actions)
+[![GitHub Tag](https://img.shields.io/github/v/tag/vielhuber/dbhelper)](https://github.com/vielhuber/dbhelper/tags)
+[![Code Style](https://img.shields.io/badge/code_style-psr--12-ff69b4.svg)](https://www.php-fig.org/psr/psr-12/)
+[![License](https://img.shields.io/github/license/vielhuber/dbhelper)](https://github.com/vielhuber/dbhelper/blob/main/LICENSE.md)
+[![Last Commit](https://img.shields.io/github/last-commit/vielhuber/dbhelper)](https://github.com/vielhuber/dbhelper/commits)
+[![PHP Version Support](https://img.shields.io/packagist/php-v/vielhuber/dbhelper)](https://packagist.org/packages/vielhuber/dbhelper)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/vielhuber/dbhelper)](https://packagist.org/packages/vielhuber/dbhelper)
 
 # 🍗 dbhelper 🍗
 
