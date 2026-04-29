@@ -6,26 +6,26 @@ use PDO;
 
 class dbhelper
 {
-    public $sql = null;
+    public ?object $sql = null;
 
-    public $connect = null;
+    public ?\stdClass $connect = null;
 
-    public $config = false;
+    public array $config = [];
 
-    public function __construct($config = [])
+    public function __construct(array $config = [])
     {
         $this->config = $config;
     }
 
     public function connect(
-        $driver,
-        $engine = null,
-        $host = null,
-        $username = null,
-        $password = null,
-        $database = null,
-        $port = 3306,
-        $timeout = 60
+        string $driver,
+        ?string $engine = null,
+        ?string $host = null,
+        ?string $username = null,
+        ?string $password = null,
+        ?string $database = null,
+        int|string|null $port = 3306,
+        int|string $timeout = 60
     ) {
         $connect = (object) [];
         $sql = null;
@@ -98,7 +98,7 @@ class dbhelper
         $this->connect = $connect;
     }
 
-    public function create_database($database)
+    public function create_database(string $database)
     {
         switch ($this->connect->driver) {
             case 'pdo':
@@ -125,14 +125,14 @@ class dbhelper
     }
 
     public function connect_with_create(
-        $driver,
-        $engine = null,
-        $host = null,
-        $username = null,
-        $password = null,
-        $database = null,
-        $port = 3306,
-        $timeout = 60
+        string $driver,
+        ?string $engine = null,
+        ?string $host = null,
+        ?string $username = null,
+        ?string $password = null,
+        ?string $database = null,
+        int|string|null $port = 3306,
+        int|string $timeout = 60
     ) {
         $this->connect($driver, $engine, $host, $username, $password, null, $port, $timeout);
         $this->create_database($engine === 'sqlite' ? $host : $database);
@@ -140,7 +140,7 @@ class dbhelper
         $this->connect($driver, $engine, $host, $username, $password, $database, $port, $timeout);
     }
 
-    public function delete_database($database)
+    public function delete_database(string $database)
     {
         switch ($this->connect->driver) {
             case 'pdo':
@@ -199,7 +199,7 @@ class dbhelper
         }
     }
 
-    public function fetch_all($query)
+    public function fetch_all(string $query, mixed ...$params)
     {
         $data = [];
         $params = func_get_args();
@@ -241,7 +241,7 @@ class dbhelper
         return $data;
     }
 
-    public function fetch_row($query)
+    public function fetch_row(string $query, mixed ...$params)
     {
         $data = [];
         $params = func_get_args();
@@ -279,7 +279,7 @@ class dbhelper
         return $data;
     }
 
-    public function fetch_col($query)
+    public function fetch_col(string $query, mixed ...$params)
     {
         $data = [];
         $params = func_get_args();
@@ -324,7 +324,7 @@ class dbhelper
         return $data;
     }
 
-    public function fetch_var($query)
+    public function fetch_var(string $query, mixed ...$params)
     {
         $data = [];
         $params = func_get_args();
@@ -372,7 +372,7 @@ class dbhelper
         return $data;
     }
 
-    public function query($query)
+    public function query(string $query, mixed ...$params)
     {
         $data = [];
         $params = func_get_args();
@@ -430,7 +430,7 @@ class dbhelper
         }
     }
 
-    public function insert($table, $data)
+    public function insert(string $table, array $data)
     {
         if (!isset($data[0]) && !is_array(array_values($data)[0])) {
             $data = [$data];
@@ -493,7 +493,7 @@ class dbhelper
         }
     }
 
-    public function last_insert_id($table = null, $column = null)
+    public function last_insert_id(?string $table = null, ?string $column = null)
     {
         $last_insert_id = null;
         switch ($this->connect->driver) {
@@ -539,7 +539,7 @@ class dbhelper
         return $last_insert_id;
     }
 
-    public function update($table, $data, $condition = null)
+    public function update(string $table, array $data, ?array $condition = null)
     {
         if (isset($data[0]) && is_array($data[0])) {
             return $this->update_batch($table, $data);
@@ -590,7 +590,7 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
-    public function delete($table, $conditions)
+    public function delete(string $table, array $conditions)
     {
         if (!isset($conditions[0]) && !is_array(array_values($conditions)[0])) {
             $conditions = [$conditions];
@@ -635,7 +635,7 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args); // returns the affected row counts
     }
 
-    public function clear($table = null)
+    public function clear(?string $table = null)
     {
         if ($table === null) {
             if ($this->connect->engine === 'mysql') {
@@ -673,12 +673,12 @@ class dbhelper
         }
     }
 
-    public function delete_table($table)
+    public function delete_table(string $table)
     {
         $this->query('DROP TABLE ' . $table);
     }
 
-    public function create_table($table, $cols)
+    public function create_table(string $table, array $cols)
     {
         $query = '';
         $query .= 'CREATE TABLE IF NOT EXISTS ';
@@ -720,7 +720,7 @@ class dbhelper
         }
     }
 
-    public function get_columns($table)
+    public function get_columns(string $table)
     {
         if ($this->connect->engine === 'mysql') {
             return $this->fetch_col(
@@ -746,7 +746,7 @@ class dbhelper
         }
     }
 
-    public function get_foreign_keys($table)
+    public function get_foreign_keys(string $table)
     {
         if ($this->connect->engine === 'mysql') {
             $return = [];
@@ -821,12 +821,12 @@ class dbhelper
         }
     }
 
-    public function is_foreign_key($table, $column)
+    public function is_foreign_key(string $table, string $column)
     {
         return array_key_exists($column, $this->get_foreign_keys($table));
     }
 
-    public function get_foreign_tables_out($table)
+    public function get_foreign_tables_out(string $table)
     {
         $return = [];
         foreach ($this->get_foreign_keys($table) as $foreign_keys__key => $foreign_keys__value) {
@@ -838,7 +838,7 @@ class dbhelper
         return $return;
     }
 
-    public function get_foreign_tables_in($table)
+    public function get_foreign_tables_in(string $table)
     {
         $return = [];
         $tables = $this->get_tables();
@@ -859,17 +859,17 @@ class dbhelper
         return $return;
     }
 
-    public function has_table($table)
+    public function has_table(string $table)
     {
         return in_array($table, $this->get_tables());
     }
 
-    public function has_column($table, $column)
+    public function has_column(string $table, string $column)
     {
         return in_array($column, $this->get_columns($table));
     }
 
-    public function get_datatype($table, $column)
+    public function get_datatype(string $table, string $column)
     {
         if ($this->connect->engine === 'mysql') {
             return $this->fetch_var(
@@ -898,7 +898,7 @@ class dbhelper
         }
     }
 
-    public function get_primary_key($table)
+    public function get_primary_key(string $table)
     {
         try {
             if ($this->connect->engine === 'mysql') {
@@ -928,7 +928,7 @@ class dbhelper
         }
     }
 
-    public function count($table, $condition = [])
+    public function count(string $table, array $condition = [])
     {
         $query = '';
         $query .= 'SELECT COUNT(*) FROM ';
@@ -964,7 +964,7 @@ class dbhelper
         return $ret;
     }
 
-    public function trim_values($update = false, $ignore = [])
+    public function trim_values(bool $update = false, array $ignore = [])
     {
         if (!empty($ignore)) {
             $ignore_prev = $ignore;
@@ -1093,11 +1093,11 @@ class dbhelper
     }
 
     public function delete_duplicates(
-        $table,
-        $cols = [],
-        $match_null_values = true,
-        $primary = [],
-        $case_sensitivity = true
+        string $table,
+        array $cols = [],
+        bool $match_null_values = true,
+        array $primary = [],
+        bool $case_sensitivity = true
     ) {
         if (empty($primary)) {
             $primary = [$this->get_primary_key($table) => 'desc'];
@@ -1793,7 +1793,7 @@ class dbhelper
         }
     }
 
-    private function preparse_query($query, $params)
+    private function preparse_query(string $query, array $params): array
     {
         $return = $query;
 
@@ -1918,8 +1918,8 @@ class dbhelper
         }
 
         // WordPress: pass stripslashes_deep to all parameters (wordpress always adds slashes to them)
-        if ($this->connect->driver == 'wordpress') {
-            $params = stripslashes_deep($params);
+        if ($this->connect->driver == 'wordpress' && function_exists('stripslashes_deep')) {
+            $params = \stripslashes_deep($params);
         }
 
         // trim final result
@@ -1928,7 +1928,7 @@ class dbhelper
         return [$return, $params];
     }
 
-    public function debug($query)
+    public function debug(string $query, mixed ...$params)
     {
         $params = func_get_args();
         unset($params[0]);
@@ -1957,7 +1957,7 @@ class dbhelper
         return $query;
     }
 
-    private function find_occurences($haystack, $needle)
+    private function find_occurences(string $haystack, string $needle)
     {
         $positions = [];
         $pos_last = 0;
@@ -1968,7 +1968,7 @@ class dbhelper
         return $positions;
     }
 
-    private function find_nth_occurence($haystack, $needle, $index)
+    private function find_nth_occurence(string $haystack, string $needle, int $index)
     {
         $positions = $this->find_occurences($haystack, $needle);
         if (empty($positions) || $index > count($positions) - 1) {
@@ -1977,7 +1977,7 @@ class dbhelper
         return $positions[$index];
     }
 
-    private function update_batch($table, $input)
+    private function update_batch(string $table, array $input)
     {
         $query = '';
         $args = [];
@@ -2016,7 +2016,7 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args);
     }
 
-    private function handle_logging($query, $params)
+    private function handle_logging(string $query, array $params)
     {
         $table = $this->get_table_name_from_query($query);
 
@@ -2084,7 +2084,7 @@ class dbhelper
         return $query;
     }
 
-    private function get_table_name_from_query($query)
+    private function get_table_name_from_query(string $query)
     {
         $table = '';
 
@@ -2112,7 +2112,7 @@ class dbhelper
         return $table;
     }
 
-    public function quote($name)
+    public function quote(string $name)
     {
         if ($this->connect->engine === 'mysql') {
             return '`' . $name . '`';
