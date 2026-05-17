@@ -26,6 +26,14 @@ use vielhuber\dbhelper\dbhelper;
 $db = new dbhelper();
 ```
 
+configuration options:
+
+```php
+$db = new dbhelper([
+    'return_format' => null // null|array|object
+]);
+```
+
 ## usage
 
 ```php

@@ -77,6 +77,35 @@ trait BasicTest
         ]);
     }
 
+    function test__return_format()
+    {
+        $id = self::$db->insert('test', ['col1' => 'foo']);
+        $config = self::$db->config;
+        try {
+            self::$db->config['return_format'] = null;
+            $this->assertIsArray(self::$db->fetch_row('SELECT * FROM test WHERE id = ?', $id));
+            $this->assertIsArray(self::$db->fetch_all('SELECT * FROM test WHERE id = ?', $id)[0]);
+
+            self::$db->config['return_format'] = 'object';
+            $row = self::$db->fetch_row('SELECT * FROM test WHERE id = ?', $id);
+            $this->assertIsObject($row);
+            $this->assertEquals('foo', $row->col1);
+            $rows = self::$db->fetch_all('SELECT * FROM test WHERE id = ?', $id);
+            $this->assertIsObject($rows[0]);
+            $this->assertEquals('foo', $rows[0]->col1);
+
+            self::$db->config['return_format'] = 'array';
+            $row = self::$db->fetch_row('SELECT * FROM test WHERE id = ?', $id);
+            $this->assertIsArray($row);
+            $this->assertEquals('foo', $row['col1']);
+            $rows = self::$db->fetch_all('SELECT * FROM test WHERE id = ?', $id);
+            $this->assertIsArray($rows[0]);
+            $this->assertEquals('foo', $rows[0]['col1']);
+        } finally {
+            self::$db->config = $config;
+        }
+    }
+
     function test__fetch_col()
     {
         self::$db->insert('test', ['col1' => 'foo']);

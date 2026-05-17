@@ -201,6 +201,11 @@ class dbhelper
 
     public function fetch_all(string $query, mixed ...$params)
     {
+        return $this->format_rows($this->fetch_all_raw($query, ...$params));
+    }
+
+    private function fetch_all_raw(string $query, mixed ...$params)
+    {
         $data = [];
         $params = func_get_args();
         unset($params[0]);
@@ -243,6 +248,11 @@ class dbhelper
 
     public function fetch_row(string $query, mixed ...$params)
     {
+        return $this->format_row($this->fetch_row_raw($query, ...$params));
+    }
+
+    private function fetch_row_raw(string $query, mixed ...$params)
+    {
         $data = [];
         $params = func_get_args();
         unset($params[0]);
@@ -277,6 +287,22 @@ class dbhelper
         }
 
         return $data;
+    }
+
+    private function format_rows(array $rows): array
+    {
+        return array_map(fn($row) => $this->format_row($row), $rows);
+    }
+
+    private function format_row(mixed $row): mixed
+    {
+        if (($this->config['return_format'] ?? null) === 'object' && is_array($row)) {
+            return (object) $row;
+        }
+        if (($this->config['return_format'] ?? null) === 'array' && is_object($row)) {
+            return (array) $row;
+        }
+        return $row;
     }
 
     public function fetch_col(string $query, mixed ...$params)
@@ -737,7 +763,7 @@ class dbhelper
                 $table
             );
         } elseif ($this->connect->engine === 'sqlite') {
-            $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
+            $pragma = $this->fetch_all_raw('PRAGMA table_info(' . $this->quote($table) . ');');
             $cols = [];
             foreach ($pragma as $pragma__value) {
                 $cols[] = $pragma__value['name'];
@@ -750,7 +776,7 @@ class dbhelper
     {
         if ($this->connect->engine === 'mysql') {
             $return = [];
-            $cols = $this->fetch_all(
+            $cols = $this->fetch_all_raw(
                 '
                     SELECT
                         kcu.column_name AS column_name,
@@ -779,7 +805,7 @@ class dbhelper
             return $return;
         } elseif ($this->connect->engine === 'postgres') {
             $return = [];
-            $cols = $this->fetch_all(
+            $cols = $this->fetch_all_raw(
                 '
                     SELECT
                         kcu.column_name AS column_name,
@@ -812,7 +838,7 @@ class dbhelper
             }
             return $return;
         } elseif ($this->connect->engine === 'sqlite') {
-            $pragma = $this->fetch_all('PRAGMA foreign_key_list(' . $this->quote($table) . ');');
+            $pragma = $this->fetch_all_raw('PRAGMA foreign_key_list(' . $this->quote($table) . ');');
             $return = [];
             foreach ($pragma as $pragma__value) {
                 $return[$pragma__value['from']] = [$pragma__value['table'], $pragma__value['to']];
@@ -888,7 +914,7 @@ class dbhelper
                 $column
             );
         } elseif ($this->connect->engine === 'sqlite') {
-            $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
+            $pragma = $this->fetch_all_raw('PRAGMA table_info(' . $this->quote($table) . ');');
             foreach ($pragma as $pragma__value) {
                 if ($pragma__value['name'] === $column) {
                     return $pragma__value['type'];
@@ -902,7 +928,7 @@ class dbhelper
     {
         try {
             if ($this->connect->engine === 'mysql') {
-                return ((object) $this->fetch_row(
+                return ((object) $this->fetch_row_raw(
                     'SHOW KEYS FROM ' . $this->quote($table) . ' WHERE Key_name = ?',
                     'PRIMARY'
                 ))->Column_name;
@@ -915,7 +941,7 @@ class dbhelper
                 );
             }
             if ($this->connect->engine === 'sqlite') {
-                $pragma = $this->fetch_all('PRAGMA table_info(' . $this->quote($table) . ');');
+                $pragma = $this->fetch_all_raw('PRAGMA table_info(' . $this->quote($table) . ');');
                 foreach ($pragma as $pragma__value) {
                     if ($pragma__value['pk'] == 1) {
                         return $pragma__value['name'];
@@ -999,7 +1025,7 @@ class dbhelper
                 }
             }
             $query .= implode(' OR ', $query_or);
-            $result = $this->fetch_all($query);
+            $result = $this->fetch_all_raw($query);
             if (!empty($result)) {
                 foreach ($result as $result__value) {
                     $id = $result__value[$this->get_primary_key($tables__value)];
@@ -1066,7 +1092,7 @@ class dbhelper
                 }
                 $columns[] = $this->quote($columns__value);
             }
-            $duplicates_this = $this->fetch_all(
+            $duplicates_this = $this->fetch_all_raw(
                 'SELECT ' .
                     implode(', ', $columns) .
                     ', MIN(' .
