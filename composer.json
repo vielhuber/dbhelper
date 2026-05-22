@@ -12,6 +12,6 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^12"
+        "phpunit/phpunit": "^13"
     }
 }
