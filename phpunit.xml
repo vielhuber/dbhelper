@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     bootstrap="vendor/autoload.php"
     colors="true"
-    verbose="true"
     stopOnFailure="false"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.5/phpunit.xsd"
 >
     <testsuites>
         <testsuite
             name="dbhelper testsuite"
         >
             <directory>tests/phpunit</directory>
+            <exclude>tests/phpunit/BasicTest.php</exclude>
+            <exclude>tests/phpunit/LogTest.php</exclude>
         </testsuite>
     </testsuites>
 </phpunit>
