@@ -70,6 +70,11 @@ $db->fetch_all('SELECT * FROM tablename WHERE ID = ?', 1, 2, 3, 4, 5, 6);
 /* automatic in-expansion */
 $db->fetch_all('SELECT * FROM tablename WHERE col1 = ? AND col2 IN (?)', 1, [2,3,4]);
 
+/* inline query args for dynamic query strings */
+$params = [];
+$query = 'SELECT * FROM tablename WHERE col1 = ' . $db->query_arg($params, 'foo');
+$db->fetch_all($query, ...$params);
+
 /* support for null values */
 $db->query('UPDATE tablename SET col1 = ? WHERE col2 = ? AND col3 != ?', null, null, null);
 // gets transformed to
@@ -284,4 +289,6 @@ $db = new dbhelper();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/vielhuber/dbhelper/src/static.php';
 db_connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
 db_fetch_var('SELECT col FROM tablename WHERE ID = ?', 1);
+$params = [];
+db_fetch_all('SELECT * FROM tablename WHERE col1 = ' . db_query_arg($params, 'foo'), ...$params);
 ```

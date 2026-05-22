@@ -456,6 +456,12 @@ class dbhelper
         }
     }
 
+    public function query_arg(array &$params, mixed $value): string
+    {
+        $params[] = $value;
+        return '?';
+    }
+
     public function insert(string $table, array $data)
     {
         if (!isset($data[0]) && !is_array(array_values($data)[0])) {

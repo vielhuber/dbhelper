@@ -172,6 +172,23 @@ trait BasicTest
         );
     }
 
+    function test__query_arg()
+    {
+        self::$db->insert('test', [
+            ['id' => 1, 'col1' => 'foo', 'col2' => 'bar'],
+            ['id' => 2, 'col1' => 'foo', 'col2' => 'baz'],
+            ['id' => 3, 'col1' => 'bar', 'col2' => 'baz']
+        ]);
+        $params = [];
+        $query =
+            'SELECT COUNT(*) FROM test WHERE col1 = ' .
+            self::$db->query_arg($params, 'foo') .
+            ' AND col2 IN (' .
+            self::$db->query_arg($params, ['bar', 'baz']) .
+            ')';
+        $this->assertEquals(2, self::$db->fetch_var($query, ...$params));
+    }
+
     function test__in_expansion()
     {
         self::$db->insert('test', [

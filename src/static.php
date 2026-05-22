@@ -49,6 +49,11 @@ function db_query(...$query)
     global $db;
     return $db->query(...$query);
 }
+function db_query_arg(array &$params, mixed $value): string
+{
+    global $db;
+    return $db->query_arg($params, $value);
+}
 function db_insert($table, $data)
 {
     global $db;
