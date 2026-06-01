@@ -6,8 +6,8 @@ use vielhuber\dbhelper\dbhelper;
 
 trait BasicTest
 {
-    public static $db;
-    public static $credentials;
+    public static dbhelper $db;
+    public static object $credentials;
 
     function test__insert()
     {
@@ -51,6 +51,20 @@ trait BasicTest
             self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ? OR col1 = ?', 'foo', 'bar'),
             0
         );
+    }
+
+    function test__create_index()
+    {
+        self::$db->create_index('test', 'test_col1', ['col1']);
+        self::$db->create_index('test', 'test_col2_col3', ['col2', 'col3']);
+        $this->assertTrue(self::$db->has_index('test', 'test_col1'));
+        $this->assertTrue(self::$db->has_index('test', 'test_col2_col3'));
+        $this->assertGreaterThanOrEqual(2, count(self::$db->get_indexes('test')));
+        self::$db->insert('test', ['col1' => 'foo', 'col2' => 'bar', 'col3' => 'baz']);
+        $this->assertEquals(1, self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', 'foo'));
+        self::$db->delete_index('test', 'test_col1');
+        $this->assertFalse(self::$db->has_index('test', 'test_col1'));
+        $this->assertTrue(self::$db->has_index('test', 'test_col2_col3'));
     }
 
     function test__fetch_all()
@@ -396,20 +410,20 @@ trait BasicTest
     {
         self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
         self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
-        $this->assertEquals(self::$db->get_duplicates('test'), ['count' => [], 'data' => []]);
+        $this->assertEquals(['count' => [], 'data' => []], self::$db->get_duplicates());
         self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
-        $this->assertEquals(self::$db->get_duplicates('test'), [
+        $this->assertEquals([
             'count' => ['test' => 2],
             'data' => ['test' => [['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2', 'MIN()' => 2, 'COUNT()' => 2]]]
-        ]);
+        ], self::$db->get_duplicates());
         self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
         self::$db->insert('test', ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2']);
-        $this->assertEquals(self::$db->get_duplicates('test'), [
+        $this->assertEquals([
             'count' => ['test' => 4],
             'data' => ['test' => [['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2', 'MIN()' => 2, 'COUNT()' => 4]]]
-        ]);
+        ], self::$db->get_duplicates());
         self::$db->insert('test', ['col1' => 'foo1', 'col2' => 'bar1', 'col3' => 'baz1']);
-        $this->assertEquals(self::$db->get_duplicates('test'), [
+        $this->assertEquals([
             'count' => ['test' => 6],
             'data' => [
                 'test' => [
@@ -417,7 +431,7 @@ trait BasicTest
                     ['col1' => 'foo2', 'col2' => 'bar2', 'col3' => 'baz2', 'MIN()' => 2, 'COUNT()' => 4]
                 ]
             ]
-        ]);
+        ], self::$db->get_duplicates());
     }
 
     function test__delete_duplicates()

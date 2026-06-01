@@ -6,8 +6,8 @@ use vielhuber\dbhelper\dbhelper;
 
 trait BasicSetup
 {
-    public static $db;
-    public static $credentials;
+    public static dbhelper $db;
+    public static object $credentials;
 
     public static function setUpBeforeClass(): void
     {

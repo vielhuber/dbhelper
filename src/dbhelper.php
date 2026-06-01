@@ -733,6 +733,73 @@ class dbhelper
         $this->query($query);
     }
 
+    private function index_name(string $table, string $index): string
+    {
+        if ($this->connect->engine === 'sqlite' || $this->connect->engine === 'postgres') {
+            return preg_replace('/[^a-zA-Z0-9_]/', '_', $table . '_' . $index) ?? $index;
+        }
+        return $index;
+    }
+
+    public function get_indexes(string $table): array
+    {
+        if ($this->connect->engine === 'mysql') {
+            return $this->fetch_col(
+                'SELECT DISTINCT index_name FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? ORDER BY index_name',
+                $this->connect->database,
+                $table
+            );
+        } elseif ($this->connect->engine === 'postgres') {
+            return $this->fetch_col(
+                'SELECT indexname FROM pg_indexes WHERE schemaname = ? AND tablename = ? ORDER BY indexname',
+                'public',
+                $table
+            );
+        } elseif ($this->connect->engine === 'sqlite') {
+            return $this->fetch_col(
+                'SELECT name FROM sqlite_master WHERE type = ? AND tbl_name = ? ORDER BY name',
+                'index',
+                $table
+            );
+        }
+        return [];
+    }
+
+    public function has_index(string $table, string $index): bool
+    {
+        return in_array($this->index_name($table, $index), $this->get_indexes($table), true);
+    }
+
+    public function create_index(string $table, string $index, array $columns, bool $unique = false)
+    {
+        $index = $this->index_name($table, $index);
+        $query = '';
+        $query .= 'CREATE ';
+        $query .= $unique ? 'UNIQUE ' : '';
+        $query .= 'INDEX ';
+        $query .= $this->quote($index);
+        $query .= ' ON ';
+        $query .= $this->quote($table);
+        $query .= ' (';
+        foreach ($columns as $columns__value) {
+            $query .= $this->quote($columns__value);
+            $query .= ',';
+        }
+        $query = substr($query, 0, -1);
+        $query .= ')';
+        $this->query($query);
+    }
+
+    public function delete_index(string $table, string $index)
+    {
+        $index = $this->index_name($table, $index);
+        if ($this->connect->engine === 'mysql') {
+            $this->query('DROP INDEX ' . $this->quote($index) . ' ON ' . $this->quote($table));
+            return;
+        }
+        $this->query('DROP INDEX ' . $this->quote($index));
+    }
+
     public function get_tables()
     {
         if ($this->connect->engine === 'mysql') {

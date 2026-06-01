@@ -95,6 +95,14 @@ $db->create_table('tablename', [
     'col3' => 'varchar(255)'
 ]);
 
+/* index helpers */
+$db->create_index('tablename', 'col1_lookup', ['col1']);
+$db->create_index('tablename', 'col2_col3_lookup', ['col2', 'col3']);
+$db->create_index('tablename', 'col1_unique', ['col1'], unique: true);
+$db->get_indexes('tablename'); // database index names
+$db->has_index('tablename', 'col1_lookup'); // true
+$db->delete_index('tablename', 'col1_lookup');
+
 /* create if not exists and connect to database */
 $db->connect_with_create('pdo', 'mysql', '127.0.0.1', 'username', 'password', 'database', 3306);
     // this is a shorthand for
@@ -195,24 +203,24 @@ $db->setup_logging();
 
 `setup_logging()` does four things:
 
--   it creates a logging table (if not exists)
--   it appends a single column `updated_by` to every table in the database (if not exists)
--   it creates triggers for all insert/update/delete events (if not exists)
--   it deletes old logging entries based on the `delete_older` option
+- it creates a logging table (if not exists)
+- it appends a single column `updated_by` to every table in the database (if not exists)
+- it creates triggers for all insert/update/delete events (if not exists)
+- it deletes old logging entries based on the `delete_older` option
 
 you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. it is recommened to exclude blob/bytea columns.
 
 the logging table has the following schema:
 
--   `id`: unique identifier of that single change
--   `log_event`: insert/update/delete
--   `log_table`: name of the table of the modified row
--   `log_key`: key of the modified row
--   `log_column`: column of the modified row
--   `log_value`: value of the modified row
--   `log_uuid`: unique identifier of that row change
--   `updated_by`: who did make that change
--   `updated_at`: date and time of the event
+- `id`: unique identifier of that single change
+- `log_event`: insert/update/delete
+- `log_table`: name of the table of the modified row
+- `log_key`: key of the modified row
+- `log_column`: column of the modified row
+- `log_value`: value of the modified row
+- `log_uuid`: unique identifier of that row change
+- `updated_by`: who did make that change
+- `updated_at`: date and time of the event
 
 we now have to adjust our queries. `updated_by` must be populated by the web application on all insert/update queries and our logging table must be manually populated before delete queries:
 
@@ -267,8 +275,8 @@ dbhelper provides a default timeout of `60` seconds, which prevents most databas
 you can manually define a timeout in the `connect()` function.\
 checkout the following sqlite lock tests:
 
--   `php tests/lock/run.php 1`: runs into database locking
--   `php tests/lock/run.php 120`: does not run into database locking
+- `php tests/lock/run.php 1`: runs into database locking
+- `php tests/lock/run.php 120`: does not run into database locking
 
 also consider enabling [wal](https://sqlite.org/wal.html) via `$db->query('PRAGMA journal_mode=WAL;');`.
 
