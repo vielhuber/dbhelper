@@ -815,7 +815,10 @@ class dbhelper
                 'public'
             );
         } elseif ($this->connect->engine === 'sqlite') {
-            return $this->fetch_col('SELECT name FROM sqlite_master WHERE type = ?', 'table');
+            return $this->fetch_col(
+                "SELECT name FROM sqlite_master WHERE type = ? AND name NOT LIKE 'sqlite_%' ORDER BY name",
+                'table'
+            );
         }
     }
 
