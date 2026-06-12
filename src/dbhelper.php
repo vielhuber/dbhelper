@@ -2118,7 +2118,7 @@ class dbhelper
         return call_user_func_array([$this, 'query'], $args);
     }
 
-    private function handle_logging(string $query, array $params)
+    private function handle_logging(string $query, array &$params)
     {
         $table = $this->get_table_name_from_query($query);
 
@@ -2150,19 +2150,17 @@ class dbhelper
                 substr($query, 0, $pos1) .
                 ',updated_by' .
                 substr($query, $pos1, $pos2 - $pos1) .
-                ',\'' .
-                $this->config['updated_by'] .
-                '\'' .
+                ',?' .
                 substr($query, $pos2);
+            $params[] = $this->config['updated_by'];
         } elseif (stripos($query, 'UPDATE') === 0) {
             $pos1 = stripos($query, 'SET') + strlen('SET');
             if ($pos1 !== false && strpos(substr($query, $pos1), 'updated_by') === false) {
                 $query =
                     substr($query, 0, $pos1) .
-                    ' updated_by = \'' .
-                    $this->config['updated_by'] .
-                    '\', ' .
+                    ' updated_by = ?, ' .
                     substr($query, $pos1);
+                array_unshift($params, $this->config['updated_by']);
             }
         } elseif (stripos($query, 'DELETE') === 0) {
             // fetch all ids that are affected
