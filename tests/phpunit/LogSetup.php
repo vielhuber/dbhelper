@@ -5,8 +5,8 @@ use vielhuber\dbhelper\dbhelper;
 
 trait LogSetup
 {
-    public static $db;
-    public static $credentials;
+    public static dbhelper $db;
+    public static \stdClass $credentials;
 
     public static function setUpBeforeClass(): void
     {

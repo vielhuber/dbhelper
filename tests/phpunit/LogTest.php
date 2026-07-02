@@ -5,7 +5,7 @@ use vielhuber\dbhelper\dbhelper;
 
 trait LogTest
 {
-    public static $db;
+    public static dbhelper $db;
 
     function test__insert()
     {
@@ -347,5 +347,65 @@ trait LogTest
             'log_value' => 9993,
             'updated_by' => 42
         ]);
+    }
+
+    function test__enable_logging_waits_for_setup_lock()
+    {
+        if (!function_exists('proc_open')) {
+            $this->markTestSkipped('proc_open is not available');
+        }
+
+        $lock_credentials = self::getCredentials();
+        $lock_name = 'dbhelper-enable-logging-' . $lock_credentials->engine . '-' . $lock_credentials->database;
+        $script = tempnam(sys_get_temp_dir(), 'dbhelper-lock-') . '.php';
+        file_put_contents(
+            $script,
+            '<?php
+            require ' .
+                var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) .
+                ';
+            $credentials = (object) ' .
+                var_export((array) $lock_credentials, true) .
+                ';
+            $db = new \vielhuber\dbhelper\dbhelper();
+            $db->connect(
+                $credentials->driver,
+                $credentials->engine,
+                $credentials->host,
+                $credentials->username,
+                $credentials->password,
+                $credentials->database,
+                $credentials->port
+            );
+            if ($credentials->engine === "mysql") {
+                $db->fetch_var("SELECT GET_LOCK(?, 30)", ' .
+                var_export($lock_name, true) .
+                ');
+            }
+            if ($credentials->engine === "postgres") {
+                $db->fetch_var("SELECT pg_advisory_lock(hashtext(?))", ' .
+                var_export($lock_name, true) .
+                ');
+            }
+            fwrite(STDOUT, "locked\n");
+            usleep(700000);
+            '
+        );
+
+        $process = proc_open(PHP_BINARY . ' ' . escapeshellarg($script), [1 => ['pipe', 'w']], $pipes);
+        $this->assertIsResource($process);
+
+        try {
+            $this->assertEquals("locked\n", fgets($pipes[1]));
+            $started_at = microtime(true);
+            self::$db->enable_logging();
+            $this->assertGreaterThan(0.3, microtime(true) - $started_at);
+            $this->assertEquals(0, proc_close($process));
+        } finally {
+            if (is_resource($process)) {
+                proc_terminate($process);
+            }
+            @unlink($script);
+        }
     }
 }

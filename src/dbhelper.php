@@ -1473,11 +1473,37 @@ class dbhelper
 
     public function enable_logging()
     {
+        $lock_name = 'dbhelper-enable-logging-' . $this->connect->engine . '-' . $this->connect->database;
         if ($this->connect->engine === 'mysql') {
-            $this->setup_logging_create_triggers_mysql();
+            $lock_acquired = (string) $this->fetch_var('SELECT GET_LOCK(?, 30)', $lock_name) === '1';
+            if (!$lock_acquired) {
+                throw new \Exception('could not acquire logging setup lock');
+            }
         }
         if ($this->connect->engine === 'postgres') {
-            $this->setup_logging_create_triggers_postgres();
+            $this->query('SET statement_timeout = 30000');
+            try {
+                $this->fetch_var('SELECT pg_advisory_lock(hashtext(?))', $lock_name);
+            } catch (\PDOException $exception) {
+                throw new \Exception('could not acquire logging setup lock', 0, $exception);
+            } finally {
+                $this->query('RESET statement_timeout');
+            }
+        }
+        try {
+            if ($this->connect->engine === 'mysql') {
+                $this->setup_logging_create_triggers_mysql();
+            }
+            if ($this->connect->engine === 'postgres') {
+                $this->setup_logging_create_triggers_postgres();
+            }
+        } finally {
+            if ($this->connect->engine === 'mysql') {
+                $this->fetch_var('SELECT RELEASE_LOCK(?)', $lock_name);
+            }
+            if ($this->connect->engine === 'postgres') {
+                $this->fetch_var('SELECT pg_advisory_unlock(hashtext(?))', $lock_name);
+            }
         }
     }
 
