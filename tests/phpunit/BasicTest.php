@@ -577,6 +577,51 @@ trait BasicTest
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test'), 0);
     }
 
+    function test__read_only()
+    {
+        $marker = 'read_only_marker';
+        self::$db->insert('test', ['col1' => $marker]);
+
+        // allowed reads (all four fetch flavours), matched via a unique marker to stay state-independent
+        $this->assertEquals(count(self::$db->fetch_all('SELECT * FROM test WHERE col1 = ?', $marker)), 1);
+        $this->assertEquals(count(self::$db->fetch_all('  select * from test where col1 = ? limit 5  ', $marker)), 1);
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?;', $marker), 1);
+        $this->assertEquals(count(self::$db->fetch_col('SELECT col1 FROM test WHERE col1 = ?', $marker)), 1);
+        $this->assertNotEmpty(self::$db->fetch_row('SELECT * FROM test WHERE col1 = ?', $marker));
+
+        // blocked: writes, stacked statements, data-modifying CTE, INTO OUTFILE, empty
+        $blocked = [
+            'DELETE FROM test',
+            'UPDATE test SET col1 = 1',
+            'DROP TABLE test',
+            'INSERT INTO test (col1) VALUES (1)',
+            'SELECT 1; DROP TABLE test',
+            'WITH x AS (SELECT 1) DELETE FROM test',
+            "SELECT * FROM test INTO OUTFILE '/tmp/x'",
+            ''
+        ];
+        foreach ($blocked as $blocked__value) {
+            try {
+                self::$db->fetch_all($blocked__value);
+                $this->assertTrue(false, $blocked__value);
+            } catch (\Exception $e) {
+                $this->assertTrue(true);
+            }
+        }
+        // the same guard protects fetch_row / fetch_col / fetch_var
+        foreach (['fetch_row', 'fetch_col', 'fetch_var'] as $blocked__method) {
+            try {
+                self::$db->$blocked__method('DELETE FROM test');
+                $this->assertTrue(false, $blocked__method);
+            } catch (\Exception $e) {
+                $this->assertTrue(true);
+            }
+        }
+
+        // no write must have happened: the marker row is still there
+        $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?', $marker), 1);
+    }
+
     function test__debug()
     {
         $this->assertEquals(

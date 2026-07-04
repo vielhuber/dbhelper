@@ -1,50 +1,50 @@
 <?php
-function db_connect(...$args)
+function db_connect(mixed ...$args)
 {
     global $db;
     return $db->connect(...$args);
 }
-function db_connect_with_create(...$args)
+function db_connect_with_create(mixed ...$args)
 {
     global $db;
     return $db->connect_with_create(...$args);
 }
-function db_create_database(...$args)
+function db_create_database(mixed ...$args)
 {
     global $db;
     return $db->create_database(...$args);
 }
-function db_disconnect_with_delete(...$args)
+function db_disconnect_with_delete(mixed ...$args)
 {
     global $db;
     return $db->disconnect_with_delete(...$args);
 }
-function db_delete_database(...$args)
+function db_delete_database(mixed ...$args)
 {
     global $db;
     return $db->delete_database(...$args);
 }
-function db_fetch_var(...$query)
+function db_fetch_var(mixed ...$query)
 {
     global $db;
     return $db->fetch_var(...$query);
 }
-function db_fetch_row(...$query)
+function db_fetch_row(mixed ...$query)
 {
     global $db;
     return $db->fetch_row(...$query);
 }
-function db_fetch_col(...$query)
+function db_fetch_col(mixed ...$query)
 {
     global $db;
     return $db->fetch_col(...$query);
 }
-function db_fetch_all(...$query)
+function db_fetch_all(mixed ...$query)
 {
     global $db;
     return $db->fetch_all(...$query);
 }
-function db_query(...$query)
+function db_query(mixed ...$query)
 {
     global $db;
     return $db->query(...$query);
@@ -54,22 +54,22 @@ function db_query_arg(array &$params, mixed $value): string
     global $db;
     return $db->query_arg($params, $value);
 }
-function db_insert($table, $data)
+function db_insert(string $table, array $data)
 {
     global $db;
     return $db->insert($table, $data);
 }
-function db_update($table, $data, $condition = null)
+function db_update(string $table, array $data, ?array $condition = null)
 {
     global $db;
     return $db->update($table, $data, $condition);
 }
-function db_delete($table, $conditions)
+function db_delete(string $table, array $conditions)
 {
     global $db;
     return $db->delete($table, $conditions);
 }
-function db_count($table, $condition = [])
+function db_count(string $table, array $condition = [])
 {
     global $db;
     return $db->count($table, $condition);
@@ -84,7 +84,7 @@ function db_disconnect()
     global $db;
     return $db->disconnect();
 }
-function db_clear($table = null)
+function db_clear(?string $table = null)
 {
     global $db;
     return $db->clear($table);
@@ -94,37 +94,37 @@ function db_get_tables()
     global $db;
     return $db->get_tables();
 }
-function db_get_columns($table)
+function db_get_columns(string $table)
 {
     global $db;
     return $db->get_columns($table);
 }
-function db_get_foreign_keys($table)
+function db_get_foreign_keys(string $table)
 {
     global $db;
     return $db->get_foreign_keys($table);
 }
-function db_is_foreign_key($table, $column)
+function db_is_foreign_key(string $table, string $column)
 {
     global $db;
-    return $db->db_is_foreign_key($table, $column);
+    return $db->is_foreign_key($table, $column);
 }
-function db_has_table($table)
+function db_has_table(string $table)
 {
     global $db;
     return $db->has_table($table);
 }
-function db_has_column($table, $column)
+function db_has_column(string $table, string $column)
 {
     global $db;
     return $db->has_column($table, $column);
 }
-function db_get_datatype($table, $column)
+function db_get_datatype(string $table, string $column)
 {
     global $db;
     return $db->get_datatype($table, $column);
 }
-function db_get_primary_key($table)
+function db_get_primary_key(string $table)
 {
     global $db;
     return $db->get_primary_key($table);

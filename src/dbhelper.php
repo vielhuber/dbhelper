@@ -201,7 +201,26 @@ class dbhelper
 
     public function fetch_all(string $query, mixed ...$params)
     {
+        $this->assert_read_only($query);
         return $this->format_rows($this->fetch_all_raw($query, ...$params));
+    }
+
+    private function assert_read_only(string $query): void
+    {
+        $query = trim($query);
+        // strip a single trailing semicolon so it does not count as a statement separator
+        $query = rtrim($query, "; \t\n\r\0\x0B");
+        // reject stacked statements (a semicolon inside a string literal is a rare, accepted false negative)
+        // reject WITH: mysql/postgres allow data-modifying CTEs (WITH ... DELETE/UPDATE/INSERT)
+        // reject INTO OUTFILE/DUMPFILE: those write to the filesystem despite starting with SELECT
+        if (
+            $query === '' ||
+            str_contains($query, ';') ||
+            preg_match('/\bINTO\s+(OUT|DUMP)FILE\b/i', $query) === 1 ||
+            preg_match('/^SELECT\b/i', $query) !== 1
+        ) {
+            throw new \Exception('Only read-only SELECT queries are allowed.');
+        }
     }
 
     private function fetch_all_raw(string $query, mixed ...$params)
@@ -248,6 +267,7 @@ class dbhelper
 
     public function fetch_row(string $query, mixed ...$params)
     {
+        $this->assert_read_only($query);
         return $this->format_row($this->fetch_row_raw($query, ...$params));
     }
 
@@ -307,6 +327,7 @@ class dbhelper
 
     public function fetch_col(string $query, mixed ...$params)
     {
+        $this->assert_read_only($query);
         $data = [];
         $params = func_get_args();
         unset($params[0]);
@@ -352,6 +373,7 @@ class dbhelper
 
     public function fetch_var(string $query, mixed ...$params)
     {
+        $this->assert_read_only($query);
         $data = [];
         $params = func_get_args();
         unset($params[0]);
