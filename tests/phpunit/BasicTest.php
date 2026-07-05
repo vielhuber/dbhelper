@@ -588,6 +588,19 @@ trait BasicTest
         $this->assertEquals(self::$db->fetch_var('SELECT COUNT(*) FROM test WHERE col1 = ?;', $marker), 1);
         $this->assertEquals(count(self::$db->fetch_col('SELECT col1 FROM test WHERE col1 = ?', $marker)), 1);
         $this->assertNotEmpty(self::$db->fetch_row('SELECT * FROM test WHERE col1 = ?', $marker));
+        // parenthesized selects are needed for union queries with per-query order by (sqlite lacks that syntax)
+        if (self::$credentials->engine !== 'sqlite') {
+            $this->assertEquals(
+                count(
+                    self::$db->fetch_all(
+                        '(SELECT * FROM test WHERE col1 = ?) UNION (SELECT * FROM test WHERE col1 = ?)',
+                        $marker,
+                        $marker
+                    )
+                ),
+                1
+            );
+        }
 
         // blocked: writes, stacked statements, data-modifying CTE, INTO OUTFILE, empty
         $blocked = [
@@ -595,6 +608,7 @@ trait BasicTest
             'UPDATE test SET col1 = 1',
             'DROP TABLE test',
             'INSERT INTO test (col1) VALUES (1)',
+            '(DELETE FROM test)',
             'SELECT 1; DROP TABLE test',
             'WITH x AS (SELECT 1) DELETE FROM test',
             "SELECT * FROM test INTO OUTFILE '/tmp/x'",

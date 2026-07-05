@@ -213,11 +213,12 @@ class dbhelper
         // reject stacked statements (a semicolon inside a string literal is a rare, accepted false negative)
         // reject WITH: mysql/postgres allow data-modifying CTEs (WITH ... DELETE/UPDATE/INSERT)
         // reject INTO OUTFILE/DUMPFILE: those write to the filesystem despite starting with SELECT
+        // allow leading parentheses: (SELECT ...) UNION (SELECT ...) needs them for per-query ORDER BY
         if (
             $query === '' ||
             str_contains($query, ';') ||
             preg_match('/\bINTO\s+(OUT|DUMP)FILE\b/i', $query) === 1 ||
-            preg_match('/^SELECT\b/i', $query) !== 1
+            preg_match('/^[\s(]*SELECT\b/i', $query) !== 1
         ) {
             throw new \Exception('Only read-only SELECT queries are allowed.');
         }
