@@ -208,20 +208,172 @@ class dbhelper
     private function assert_read_only(string $query): void
     {
         $query = trim($query);
-        // strip a single trailing semicolon so it does not count as a statement separator
+        // strip trailing semicolons so they do not count as statement separators
         $query = rtrim($query, "; \t\n\r\0\x0B");
-        // reject stacked statements (a semicolon inside a string literal is a rare, accepted false negative)
-        // reject WITH: mysql/postgres allow data-modifying CTEs (WITH ... DELETE/UPDATE/INSERT)
-        // reject INTO OUTFILE/DUMPFILE: those write to the filesystem despite starting with SELECT
-        // allow leading parentheses: (SELECT ...) UNION (SELECT ...) needs them for per-query ORDER BY
-        if (
-            $query === '' ||
-            str_contains($query, ';') ||
-            preg_match('/\bINTO\s+(OUT|DUMP)FILE\b/i', $query) === 1 ||
-            preg_match('/^[\s(]*SELECT\b/i', $query) !== 1
-        ) {
+        // reject stacked statements (a semicolon inside a string literal is a rare, accepted false positive)
+        // reject INTO anywhere: covers INTO OUTFILE/DUMPFILE (filesystem writes) and postgres'
+        // SELECT ... INTO new_table (creates a table); 'INTO' inside a string literal is a
+        // rare, accepted false positive
+        if ($query === '' || str_contains($query, ';') || preg_match('/\bINTO\b/i', $query) === 1) {
             throw new \Exception('Only read-only SELECT queries are allowed.');
         }
+        // EXPLAIN is only allowed when the explained statement itself passes this guard —
+        // postgres' EXPLAIN ANALYZE actually executes the statement and therefore stays blocked
+        $query = preg_replace('/^EXPLAIN\s+(QUERY\s+PLAN\s+)?/i', '', $query, 1);
+        // allow leading parentheses: (SELECT ...) UNION (SELECT ...) needs them for per-query ORDER BY
+        if (preg_match('/^[\s(]*(SELECT|VALUES)\b/i', $query) === 1) {
+            return;
+        }
+        // read-only metadata statements; PRAGMA only without '=' (pragma assignments write)
+        if (preg_match('/^(SHOW|DESC|DESCRIBE)\b/i', $query) === 1) {
+            return;
+        }
+        if (preg_match('/^PRAGMA\b/i', $query) === 1 && !str_contains($query, '=')) {
+            return;
+        }
+        // WITH is only allowed when every CTE body and the main statement are SELECT/VALUES,
+        // because mysql/postgres support data-modifying CTEs (WITH x AS (DELETE ...) SELECT ...).
+        // the scanner below walks the top-level CTE list, honoring quoted strings (with
+        // backslash and doubled-quote escapes), column lists and [NOT] MATERIALIZED.
+        $length = strlen($query);
+        $pos = 0;
+        $skip_whitespace = function () use (&$pos, $query, $length): void {
+            while ($pos < $length && ctype_space($query[$pos])) {
+                $pos++;
+            }
+        };
+        $read_word = function () use (&$pos, $query, $length): string {
+            $start = $pos;
+            while ($pos < $length && (ctype_alnum($query[$pos]) || $query[$pos] === '_')) {
+                $pos++;
+            }
+            return strtoupper(substr($query, $start, $pos - $start));
+        };
+        // skip a balanced parenthesis group starting at $pos
+        $skip_parens = function () use (&$pos, $query, $length): bool {
+            $depth = 0;
+            while ($pos < $length) {
+                $char = $query[$pos];
+                if ($char === "'" || $char === '"' || $char === '`') {
+                    $pos++;
+                    while ($pos < $length) {
+                        if ($query[$pos] === '\\') {
+                            $pos += 2;
+                            continue;
+                        }
+                        if ($query[$pos] === $char) {
+                            if ($pos + 1 < $length && $query[$pos + 1] === $char) {
+                                $pos += 2;
+                                continue;
+                            }
+                            break;
+                        }
+                        $pos++;
+                    }
+                    $pos++;
+                    continue;
+                }
+                if ($char === '(') {
+                    $depth++;
+                }
+                if ($char === ')') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $pos++;
+                        return true;
+                    }
+                }
+                $pos++;
+            }
+            return false;
+        };
+        $first_word_inside_parens = function () use (&$pos, $query, $length): string {
+            $peek = $pos + 1;
+            while ($peek < $length && (ctype_space($query[$peek]) || $query[$peek] === '(')) {
+                $peek++;
+            }
+            $start = $peek;
+            while ($peek < $length && (ctype_alnum($query[$peek]) || $query[$peek] === '_')) {
+                $peek++;
+            }
+            return strtoupper(substr($query, $start, $peek - $start));
+        };
+        $is_read_only_with = function () use (
+            &$pos,
+            $query,
+            $length,
+            $skip_whitespace,
+            $read_word,
+            $skip_parens,
+            $first_word_inside_parens
+        ): bool {
+            $skip_whitespace();
+            if ($read_word() !== 'WITH') {
+                return false;
+            }
+            $skip_whitespace();
+            $save = $pos;
+            if ($read_word() !== 'RECURSIVE') {
+                $pos = $save;
+            }
+            while (true) {
+                $skip_whitespace();
+                if ($read_word() === '') {
+                    return false;
+                }
+                $skip_whitespace();
+                // optional column list: name(col1, col2) AS (...)
+                if ($pos < $length && $query[$pos] === '(') {
+                    if (!$skip_parens()) {
+                        return false;
+                    }
+                    $skip_whitespace();
+                }
+                if ($read_word() !== 'AS') {
+                    return false;
+                }
+                $skip_whitespace();
+                // optional [NOT] MATERIALIZED (postgres)
+                $save = $pos;
+                $word = $read_word();
+                if ($word === 'NOT') {
+                    $skip_whitespace();
+                    if ($read_word() !== 'MATERIALIZED') {
+                        return false;
+                    }
+                    $skip_whitespace();
+                } elseif ($word === 'MATERIALIZED') {
+                    $skip_whitespace();
+                } else {
+                    $pos = $save;
+                }
+                if ($pos >= $length || $query[$pos] !== '(') {
+                    return false;
+                }
+                if (!in_array($first_word_inside_parens(), ['SELECT', 'VALUES'], true)) {
+                    return false;
+                }
+                if (!$skip_parens()) {
+                    return false;
+                }
+                $skip_whitespace();
+                if ($pos < $length && $query[$pos] === ',') {
+                    $pos++;
+                    continue;
+                }
+                break;
+            }
+            $skip_whitespace();
+            while ($pos < $length && $query[$pos] === '(') {
+                $pos++;
+                $skip_whitespace();
+            }
+            return in_array($read_word(), ['SELECT', 'VALUES'], true);
+        };
+        if ($is_read_only_with()) {
+            return;
+        }
+        throw new \Exception('Only read-only SELECT queries are allowed.');
     }
 
     private function fetch_all_raw(string $query, mixed ...$params)

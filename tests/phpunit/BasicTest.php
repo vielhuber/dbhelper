@@ -602,7 +602,39 @@ trait BasicTest
             );
         }
 
-        // blocked: writes, stacked statements, data-modifying CTE, INTO OUTFILE, empty
+        // allowed: read-only CTEs (single, chained, recursive, column list, window/aggregate main query)
+        $this->assertEquals(
+            count(self::$db->fetch_all('WITH x AS (SELECT * FROM test WHERE col1 = ?) SELECT * FROM x', $marker)),
+            1
+        );
+        $this->assertEquals(
+            count(
+                self::$db->fetch_all(
+                    'WITH x AS (SELECT * FROM test WHERE col1 = ?), y AS (SELECT * FROM x) SELECT * FROM y',
+                    $marker
+                )
+            ),
+            1
+        );
+        $this->assertEquals(
+            self::$db->fetch_var(
+                'WITH RECURSIVE cnt(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM cnt WHERE n < 3) SELECT MAX(n) FROM cnt'
+            ),
+            3
+        );
+
+        // allowed: further read-only statement forms (engine-specific where needed)
+        $this->assertNotEmpty(self::$db->fetch_all('EXPLAIN SELECT * FROM test'));
+        if (self::$credentials->engine === 'sqlite') {
+            $this->assertNotEmpty(self::$db->fetch_all('PRAGMA table_info(test)'));
+            $this->assertNotEmpty(self::$db->fetch_all('EXPLAIN QUERY PLAN SELECT * FROM test'));
+        }
+        if (self::$credentials->engine === 'mysql') {
+            $this->assertNotEmpty(self::$db->fetch_all('SHOW TABLES'));
+            $this->assertNotEmpty(self::$db->fetch_all('DESCRIBE test'));
+        }
+
+        // blocked: writes, stacked statements, data-modifying CTE, INTO (outfile/new table), empty
         $blocked = [
             'DELETE FROM test',
             'UPDATE test SET col1 = 1',
@@ -611,7 +643,15 @@ trait BasicTest
             '(DELETE FROM test)',
             'SELECT 1; DROP TABLE test',
             'WITH x AS (SELECT 1) DELETE FROM test',
+            'WITH x AS (DELETE FROM test) SELECT * FROM x',
+            'WITH x AS (SELECT 1) UPDATE test SET col1 = 1',
+            'WITH x AS (INSERT INTO test (col1) VALUES (1)) SELECT 1',
+            'WITH x AS (SELECT 1), y AS (DELETE FROM test) SELECT * FROM x',
             "SELECT * FROM test INTO OUTFILE '/tmp/x'",
+            'SELECT * INTO backup_table FROM test',
+            'EXPLAIN ANALYZE DELETE FROM test',
+            'EXPLAIN DELETE FROM test',
+            'PRAGMA journal_mode = DELETE',
             ''
         ];
         foreach ($blocked as $blocked__value) {
