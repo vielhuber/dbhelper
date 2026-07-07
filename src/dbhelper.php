@@ -208,13 +208,91 @@ class dbhelper
     private function assert_read_only(string $query): void
     {
         $query = trim($query);
+        // remove sql comments up front (quote-aware) so a ';' or the word 'into' hidden in a
+        // comment can neither trip the checks below nor be mistaken for hiding a statement;
+        // string / identifier literals are copied verbatim so a comment marker inside them is not
+        // treated as a comment (and vice versa)
+        $stripped = '';
+        $comment_length = strlen($query);
+        $comment_pos = 0;
+        while ($comment_pos < $comment_length) {
+            $comment_char = $query[$comment_pos];
+            if ($comment_char === "'" || $comment_char === '"' || $comment_char === '`') {
+                $stripped .= $comment_char;
+                $comment_pos++;
+                while ($comment_pos < $comment_length) {
+                    if ($query[$comment_pos] === '\\' && $comment_pos + 1 < $comment_length) {
+                        $stripped .= $query[$comment_pos] . $query[$comment_pos + 1];
+                        $comment_pos += 2;
+                        continue;
+                    }
+                    if ($query[$comment_pos] === $comment_char) {
+                        if ($comment_pos + 1 < $comment_length && $query[$comment_pos + 1] === $comment_char) {
+                            $stripped .= $comment_char . $comment_char;
+                            $comment_pos += 2;
+                            continue;
+                        }
+                        $stripped .= $comment_char;
+                        $comment_pos++;
+                        break;
+                    }
+                    $stripped .= $query[$comment_pos];
+                    $comment_pos++;
+                }
+                continue;
+            }
+            if ($comment_char === '/' && $comment_pos + 1 < $comment_length && $query[$comment_pos + 1] === '*') {
+                $comment_pos += 2;
+                while (
+                    $comment_pos + 1 < $comment_length &&
+                    !($query[$comment_pos] === '*' && $query[$comment_pos + 1] === '/')
+                ) {
+                    $comment_pos++;
+                }
+                $comment_pos += 2;
+                $stripped .= ' ';
+                continue;
+            }
+            // mysql only treats -- as a comment when followed by whitespace or end of input,
+            // so 5--3 stays an arithmetic expression rather than becoming a comment
+            if (
+                $comment_char === '-' &&
+                $comment_pos + 1 < $comment_length &&
+                $query[$comment_pos + 1] === '-' &&
+                ($comment_pos + 2 >= $comment_length || ctype_space($query[$comment_pos + 2]))
+            ) {
+                $comment_pos += 2;
+                while ($comment_pos < $comment_length && $query[$comment_pos] !== "\n") {
+                    $comment_pos++;
+                }
+                $stripped .= ' ';
+                continue;
+            }
+            if ($comment_char === '#') {
+                $comment_pos++;
+                while ($comment_pos < $comment_length && $query[$comment_pos] !== "\n") {
+                    $comment_pos++;
+                }
+                $stripped .= ' ';
+                continue;
+            }
+            $stripped .= $comment_char;
+            $comment_pos++;
+        }
+        $query = trim($stripped);
         // strip trailing semicolons so they do not count as statement separators
         $query = rtrim($query, "; \t\n\r\0\x0B");
-        // reject stacked statements (a semicolon inside a string literal is a rare, accepted false positive)
-        // reject INTO anywhere: covers INTO OUTFILE/DUMPFILE (filesystem writes) and postgres'
-        // SELECT ... INTO new_table (creates a table); 'INTO' inside a string literal is a
-        // rare, accepted false positive
-        if ($query === '' || str_contains($query, ';') || preg_match('/\bINTO\b/i', $query) === 1) {
+        // mask out string and identifier literals (honoring backslash and doubled-quote escapes)
+        // so a ';' or the word 'into' inside a literal cannot trip the checks below; this codebase
+        // legitimately embeds both (email-list splitting, serialized-blob matching in LIKE)
+        $unquoted = preg_replace(
+            '/\'(?:[^\'\\\\]|\\\\.|\'\')*\'|"(?:[^"\\\\]|\\\\.|"")*"|`(?:[^`\\\\]|\\\\.|``)*`/s',
+            ' ',
+            $query
+        );
+        // reject stacked statements and INTO writes: INTO OUTFILE/DUMPFILE (filesystem writes) and
+        // postgres' SELECT ... INTO new_table (creates a table)
+        if ($query === '' || str_contains($unquoted, ';') || preg_match('/\bINTO\b/i', $unquoted) === 1) {
             throw new \Exception('Only read-only SELECT queries are allowed.');
         }
         // EXPLAIN is only allowed when the explained statement itself passes this guard —
