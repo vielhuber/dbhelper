@@ -252,9 +252,50 @@ important note: if we manipulate data outside of our web application, the trigge
 call the following helper functions, if you (temporarily) need to disable logging by triggers:
 
 ```php
-$db->disable_logging();
-$db->query('DELETE * FROM mega_big_table');
-$db->enable_logging();
+$db->disable_logging(['mega_big_table']);
+try {
+    $db->query('DELETE FROM mega_big_table');
+} finally {
+    $db->enable_logging(['mega_big_table']);
+}
+```
+
+always use a `try`/`finally` block. if the code in between throws, logging stays off until someone turns it back on – and missing log entries cannot be recreated afterwards.
+
+both methods take an optional list of tables. without it every table of the database loses its logging, which is rarely what you want – pass the tables you are about to touch.
+
+`disable_logging()` drops the triggers and, on postgres, their trigger functions along with them – otherwise the functions pile up in databases where logging is removed and set up again. if you are only suspending logging for a moment and want the recreation to stay cheap, keep them:
+
+```php
+$db->disable_logging(delete: false);
+$db->disable_logging(['mega_big_table'], delete: false);
+```
+
+on mysql the flag has no effect, there are no separate trigger functions there.
+
+`enable_logging()` recreates missing triggers and switches disabled ones back on, so it is also the repair path. `setup_logging()` rebuilds everything from scratch.
+
+to find out whether logging is currently in place, use:
+
+```php
+$db->check_logging();
+// ['missing' => [['table' => 'foo', 'trigger' => 'trigger-logging-insert-foo']], 'disabled' => []]
+```
+
+both lists are empty if everything is fine. `missing` catches an aborted `disable_logging()` and tables that never had logging set up, `disabled` catches triggers someone switched off by hand with `ALTER TABLE ... DISABLE TRIGGER` (postgres) or a dump that was restored in that state. run this on a schedule – a lost trigger produces no error, it just stops logging.
+
+all logging methods at a glance:
+
+```php
+$db->setup_logging(); // creates the logging table, adds updated_by to every table, (re)creates all triggers, deletes old entries
+$db->enable_auto_inject(); // fills updated_by on every insert/update and writes the log row before every delete, for this connection
+$db->check_logging(); // returns which triggers are missing or switched off, both lists empty means everything is fine
+$db->check_logging(['table1']); // ... only for the given tables
+$db->disable_logging(); // drops all logging triggers and, on postgres, their trigger functions
+$db->disable_logging(['table1']); // ... only for the given tables
+$db->disable_logging(delete: false); // ... but keeps the trigger functions, so that recreating the triggers stays cheap
+$db->enable_logging(); // recreates missing triggers and switches disabled ones back on, also the repair path
+$db->enable_logging(['table1']); // ... only for the given tables
 ```
 
 that's it – happy logging.

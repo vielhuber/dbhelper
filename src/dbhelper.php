@@ -1693,40 +1693,113 @@ class dbhelper
         }
     }
 
-    public function disable_logging()
+    public function disable_logging(?array $tables = null, bool $delete = true)
     {
-        foreach ($this->get_tables() as $table__value) {
-            if ($this->connect->engine === 'mysql') {
-                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value));
-                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value));
-                $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value));
+        $lock_name = $this->logging_lock_name();
+        $this->logging_lock_acquire($lock_name);
+        try {
+            foreach ($this->get_tables() as $table__value) {
+                if ($tables !== null && !in_array($table__value, $tables)) {
+                    continue;
+                }
+                foreach ($this->get_logging_trigger_names($table__value) as $trigger__value) {
+                    if ($this->connect->engine === 'mysql') {
+                        $this->query('DROP TRIGGER IF EXISTS ' . $this->quote($trigger__value));
+                    }
+                    if ($this->connect->engine === 'postgres') {
+                        $this->query(
+                            'DROP TRIGGER IF EXISTS ' .
+                                $this->quote($trigger__value) .
+                                ' ON ' .
+                                $this->quote($table__value)
+                        );
+                    }
+                }
+                if ($delete === true && $this->connect->engine === 'postgres') {
+                    /* the functions outlive their triggers and would pile up otherwise */
+                    foreach (['insert', 'update', 'delete'] as $event__value) {
+                        $this->query(
+                            'DROP FUNCTION IF EXISTS trigger_logging_' . $event__value . '_' . $table__value . '()'
+                        );
+                    }
+                }
             }
-            if ($this->connect->engine === 'postgres') {
-                $this->query(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote('trigger-logging-insert-' . $table__value) .
-                        ' ON ' .
-                        $this->quote($table__value)
-                );
-                $this->query(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote('trigger-logging-update-' . $table__value) .
-                        ' ON ' .
-                        $this->quote($table__value)
-                );
-                $this->query(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote('trigger-logging-delete-' . $table__value) .
-                        ' ON ' .
-                        $this->quote($table__value)
-                );
-            }
+        } finally {
+            $this->logging_lock_release($lock_name);
         }
     }
 
-    public function enable_logging()
+    public function enable_logging(?array $tables = null)
     {
-        $lock_name = 'dbhelper-enable-logging-' . $this->connect->engine . '-' . $this->connect->database;
+        $lock_name = $this->logging_lock_name();
+        $this->logging_lock_acquire($lock_name);
+        try {
+            $triggers = $this->get_logging_triggers();
+            $tables_missing = [];
+            foreach ($this->get_logging_tables($tables) as $table__value) {
+                foreach ($this->get_logging_trigger_names($table__value) as $trigger__value) {
+                    if (!isset($triggers[$table__value][$trigger__value])) {
+                        $tables_missing[] = $table__value;
+                        break;
+                    }
+                }
+            }
+            if (!empty($tables_missing)) {
+                if ($this->connect->engine === 'mysql') {
+                    $this->setup_logging_create_triggers_mysql($tables_missing);
+                }
+                if ($this->connect->engine === 'postgres') {
+                    $this->setup_logging_create_triggers_postgres($tables_missing);
+                }
+            }
+            if ($this->connect->engine === 'postgres') {
+                foreach ($this->get_logging_tables($tables) as $table__value) {
+                    foreach ($this->get_logging_trigger_names($table__value) as $trigger__value) {
+                        if (
+                            !isset($triggers[$table__value][$trigger__value]) ||
+                            $triggers[$table__value][$trigger__value] === true
+                        ) {
+                            continue;
+                        }
+                        $this->query(
+                            'ALTER TABLE ' .
+                                $this->quote($table__value) .
+                                ' ENABLE TRIGGER ' .
+                                $this->quote($trigger__value)
+                        );
+                    }
+                }
+            }
+        } finally {
+            $this->logging_lock_release($lock_name);
+        }
+    }
+
+    public function check_logging(?array $tables = null)
+    {
+        $return = ['missing' => [], 'disabled' => []];
+        $triggers = $this->get_logging_triggers();
+        foreach ($this->get_logging_tables($tables) as $table__value) {
+            foreach ($this->get_logging_trigger_names($table__value) as $trigger__value) {
+                if (!isset($triggers[$table__value][$trigger__value])) {
+                    $return['missing'][] = ['table' => $table__value, 'trigger' => $trigger__value];
+                    continue;
+                }
+                if ($triggers[$table__value][$trigger__value] === false) {
+                    $return['disabled'][] = ['table' => $table__value, 'trigger' => $trigger__value];
+                }
+            }
+        }
+        return $return;
+    }
+
+    private function logging_lock_name()
+    {
+        return 'dbhelper-enable-logging-' . $this->connect->engine . '-' . $this->connect->database;
+    }
+
+    private function logging_lock_acquire(string $lock_name)
+    {
         if ($this->connect->engine === 'mysql') {
             $lock_acquired = (string) $this->fetch_var('SELECT GET_LOCK(?, 30)', $lock_name) === '1';
             if (!$lock_acquired) {
@@ -1742,27 +1815,94 @@ class dbhelper
             } finally {
                 $this->query('RESET statement_timeout');
             }
-        }
-        try {
-            if ($this->connect->engine === 'mysql') {
-                $this->setup_logging_create_triggers_mysql();
-            }
-            if ($this->connect->engine === 'postgres') {
-                $this->setup_logging_create_triggers_postgres();
-            }
-        } finally {
-            if ($this->connect->engine === 'mysql') {
-                $this->fetch_var('SELECT RELEASE_LOCK(?)', $lock_name);
-            }
-            if ($this->connect->engine === 'postgres') {
-                $this->fetch_var('SELECT pg_advisory_unlock(hashtext(?))', $lock_name);
-            }
+            /* trigger ddl waits for open transactions on the table, which would block forever */
+            $this->query('SET lock_timeout = 30000');
         }
     }
 
-    private function setup_logging_create_triggers_mysql()
+    private function logging_lock_release(string $lock_name)
+    {
+        if ($this->connect->engine === 'mysql') {
+            $this->fetch_var('SELECT RELEASE_LOCK(?)', $lock_name);
+        }
+        if ($this->connect->engine === 'postgres') {
+            $this->query('RESET lock_timeout');
+            $this->fetch_var('SELECT pg_advisory_unlock(hashtext(?))', $lock_name);
+        }
+    }
+
+    private function get_logging_tables(?array $tables = null)
+    {
+        $return = [];
+        foreach ($this->get_tables() as $table__value) {
+            if ($tables !== null && !in_array($table__value, $tables)) {
+                continue;
+            }
+            if (
+                isset($this->config['exclude']) &&
+                isset($this->config['exclude']['tables']) &&
+                in_array($table__value, $this->config['exclude']['tables'])
+            ) {
+                continue;
+            }
+            if ($table__value === $this->config['logging_table']) {
+                continue;
+            }
+            $return[] = $table__value;
+        }
+        return $return;
+    }
+
+    private function get_logging_trigger_names(string $table)
+    {
+        return [
+            'trigger-logging-insert-' . $table,
+            'trigger-logging-update-' . $table,
+            'trigger-logging-delete-' . $table
+        ];
+    }
+
+    private function get_logging_triggers()
+    {
+        $return = [];
+        if ($this->connect->engine === 'mysql') {
+            foreach (
+                $this->fetch_all(
+                    'SELECT event_object_table AS table_name, trigger_name AS trigger_name FROM information_schema.triggers WHERE trigger_schema = ? AND trigger_name LIKE ?',
+                    $this->connect->database,
+                    'trigger-logging-%'
+                )
+                as $triggers__value
+            ) {
+                $return[$triggers__value['table_name']][$triggers__value['trigger_name']] = true;
+            }
+        }
+        if ($this->connect->engine === 'postgres') {
+            foreach (
+                $this->fetch_all(
+                    'SELECT c.relname AS table_name, t.tgname AS trigger_name, t.tgenabled AS trigger_enabled
+                    FROM pg_trigger t
+                    INNER JOIN pg_class c ON c.oid = t.tgrelid
+                    INNER JOIN pg_namespace n ON n.oid = c.relnamespace
+                    WHERE t.tgisinternal = false AND n.nspname = ? AND t.tgname LIKE ?',
+                    'public',
+                    'trigger-logging-%'
+                )
+                as $triggers__value
+            ) {
+                $return[$triggers__value['table_name']][$triggers__value['trigger_name']] =
+                    $triggers__value['trigger_enabled'] !== 'D';
+            }
+        }
+        return $return;
+    }
+
+    private function setup_logging_create_triggers_mysql(?array $tables = null)
     {
         foreach ($this->get_tables() as $table__value) {
+            if ($tables !== null && !in_array($table__value, $tables)) {
+                continue;
+            }
             $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-insert-' . $table__value));
             $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-update-' . $table__value));
             $this->query('DROP TRIGGER IF EXISTS ' . $this->quote('trigger-logging-delete-' . $table__value));
@@ -1941,9 +2081,12 @@ class dbhelper
         }
     }
 
-    private function setup_logging_create_triggers_postgres()
+    private function setup_logging_create_triggers_postgres(?array $tables = null)
     {
         foreach ($this->get_tables() as $table__value) {
+            if ($tables !== null && !in_array($table__value, $tables)) {
+                continue;
+            }
             $this->query(
                 'DROP TRIGGER IF EXISTS ' .
                     $this->quote('trigger-logging-insert-' . $table__value) .

@@ -408,4 +408,100 @@ trait LogTest
             @unlink($script);
         }
     }
+
+    function test__disable_logging_can_be_scoped_to_single_tables()
+    {
+        self::$db->create_table('test3', ['id' => 'SERIAL PRIMARY KEY', 'col1' => 'varchar(255)']);
+        self::$db->setup_logging();
+
+        self::$db->disable_logging(['test']);
+        self::$db->insert('test', ['col1' => 'foo']);
+        self::$db->insert('test3', ['col1' => 'bar']);
+        $this->assertEquals(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
+        $this->assertGreaterThan(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test3'));
+
+        self::$db->enable_logging(['test']);
+        self::$db->insert('test', ['col1' => 'foo2']);
+        $this->assertGreaterThan(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
+    }
+
+    function test__check_logging_detects_missing_triggers()
+    {
+        $this->assertEquals(['missing' => [], 'disabled' => []], self::$db->check_logging());
+
+        self::$db->disable_logging(['test']);
+        $check = self::$db->check_logging();
+        $this->assertCount(3, $check['missing']);
+        $this->assertCount(0, $check['disabled']);
+
+        self::$db->enable_logging();
+        $this->assertEquals(['missing' => [], 'disabled' => []], self::$db->check_logging());
+    }
+
+    function test__check_logging_detects_manually_disabled_triggers()
+    {
+        if (self::getCredentials()->engine !== 'postgres') {
+            $this->markTestSkipped('only postgres can switch a trigger off without dropping it');
+        }
+
+        self::$db->query('ALTER TABLE "test" DISABLE TRIGGER "trigger-logging-insert-test"');
+        $check = self::$db->check_logging();
+        $this->assertCount(0, $check['missing']);
+        $this->assertCount(1, $check['disabled']);
+
+        self::$db->enable_logging();
+        $this->assertEquals(['missing' => [], 'disabled' => []], self::$db->check_logging());
+
+        self::$db->insert('test', ['col1' => 'foo']);
+        $this->assertGreaterThan(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
+    }
+
+    function test__disable_logging_drops_the_trigger_functions_unless_told_otherwise()
+    {
+        if (self::getCredentials()->engine !== 'postgres') {
+            $this->markTestSkipped('the trigger functions only exist on postgres');
+        }
+
+        self::$db->disable_logging(['test']);
+        $this->assertCount(3, self::$db->check_logging()['missing']);
+        $this->assertEquals(0, $this->countTriggerFunctions());
+
+        self::$db->enable_logging(['test']);
+        self::$db->disable_logging(['test'], delete: false);
+        $this->assertCount(3, self::$db->check_logging()['missing']);
+        $this->assertEquals(3, $this->countTriggerFunctions());
+
+        self::$db->insert('test', ['col1' => 'foo']);
+        $this->assertEquals(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
+
+        self::$db->enable_logging(['test']);
+        $this->assertEquals(['missing' => [], 'disabled' => []], self::$db->check_logging());
+        self::$db->insert('test', ['col1' => 'foo2']);
+        $this->assertGreaterThan(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
+    }
+
+    private function countTriggerFunctions()
+    {
+        return self::$db->fetch_var(
+            "SELECT count(*) FROM pg_proc p INNER JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public' AND p.proname LIKE 'trigger\_logging\_%\_test'"
+        );
+    }
+
+    function test__enable_logging_recreates_dropped_triggers()
+    {
+        if (self::getCredentials()->engine === 'postgres') {
+            self::$db->query('DROP TRIGGER "trigger-logging-insert-test" ON "test"');
+        }
+        if (self::getCredentials()->engine === 'mysql') {
+            self::$db->query('DROP TRIGGER `trigger-logging-insert-test`');
+        }
+        $this->assertCount(1, self::$db->check_logging()['missing']);
+
+        self::$db->enable_logging();
+        $this->assertEquals(['missing' => [], 'disabled' => []], self::$db->check_logging());
+
+        self::$db->insert('test', ['col1' => 'foo']);
+        $this->assertGreaterThan(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
+    }
 }
