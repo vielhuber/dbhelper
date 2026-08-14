@@ -1588,6 +1588,7 @@ class dbhelper
             $this->setup_logging_create_triggers_postgres();
         }
 
+        $this->setup_logging_create_purge_index();
         $this->purge_logging();
     }
 
@@ -1596,15 +1597,9 @@ class dbhelper
         if ($batch_size < 1) {
             throw new \InvalidArgumentException('batch size must be greater than zero');
         }
-        if (!isset($this->config['delete_older'])) {
+        $delete_older = $this->logging_retention_months();
+        if ($delete_older === null) {
             return 0;
-        }
-
-        $delete_older = filter_var($this->config['delete_older'], FILTER_VALIDATE_INT, [
-            'options' => ['min_range' => 1]
-        ]);
-        if ($delete_older === false) {
-            throw new \InvalidArgumentException('delete_older must be a positive integer');
         }
         if (!in_array($this->connect->engine, ['mysql', 'postgres'], true)) {
             throw new \LogicException('logging purge is only supported for mysql and postgres');
@@ -1645,6 +1640,68 @@ class dbhelper
         } while ($deleted === $batch_size);
 
         return $deleted_total;
+    }
+
+    private function logging_retention_months(): ?int
+    {
+        if (!isset($this->config['delete_older'])) {
+            return null;
+        }
+
+        $delete_older = filter_var($this->config['delete_older'], FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1]
+        ]);
+        if ($delete_older === false) {
+            throw new \InvalidArgumentException('delete_older must be a positive integer');
+        }
+
+        return $delete_older;
+    }
+
+    private function setup_logging_create_purge_index(): void
+    {
+        if ($this->logging_retention_months() === null) {
+            return;
+        }
+
+        $logging_table = $this->config['logging_table'];
+        $index = 'updated_at_id_index';
+        if ($this->has_index($logging_table, $index)) {
+            return;
+        }
+
+        $index = $this->index_name($logging_table, $index);
+        if ($this->connect->engine === 'mysql') {
+            $this->query(
+                'CREATE INDEX ' .
+                    $this->quote($index) .
+                    ' ON ' .
+                    $this->quote($logging_table) .
+                    ' (' .
+                    $this->quote('updated_at') .
+                    ', ' .
+                    $this->quote('id') .
+                    ')'
+            );
+        }
+        if ($this->connect->engine === 'postgres') {
+            $concurrently = $this->sql instanceof PDO && !$this->sql->inTransaction();
+            $this->query(
+                'CREATE INDEX ' .
+                    ($concurrently ? 'CONCURRENTLY ' : '') .
+                    'IF NOT EXISTS ' .
+                    $this->quote($index) .
+                    ' ON ' .
+                    $this->quote($logging_table) .
+                    ' (' .
+                    $this->quote('updated_at') .
+                    ', ' .
+                    $this->quote('id') .
+                    ') WHERE ' .
+                    $this->quote('updated_at') .
+                    ' IS NOT NULL'
+            );
+        }
     }
 
     private function setup_logging_create_table_mysql()

@@ -206,6 +206,7 @@ $db->setup_logging();
 - it creates a logging table (if not exists)
 - it appends a single column `updated_by` to every table in the database (if not exists)
 - it creates triggers for all insert/update/delete events (if not exists)
+- it creates an index on `(updated_at, id)` when `delete_older` is configured
 - it deletes old logging entries based on the `delete_older` option
 
 you should run this method after a schema change (e.g. in your migrations). it is recommended to exclude blob/bytea columns.
@@ -217,7 +218,7 @@ $deleted = $db->purge_logging(); // deletes in batches of 10,000 and returns the
 $deleted = $db->purge_logging(1_000); // custom batch size
 ```
 
-the purge uses the positive integer in the `delete_older` option and supports mysql and postgres. its batch size must also be a positive integer. add an index on `(updated_at, id)` to the logging table so finding each batch does not require a full table scan.
+the purge uses the positive integer in the `delete_older` option and supports mysql and postgres. its batch size must also be a positive integer. `setup_logging()` creates the required `(updated_at, id)` index automatically; on postgres it is partial and created concurrently when no transaction is active.
 
 the logging table has the following schema:
 

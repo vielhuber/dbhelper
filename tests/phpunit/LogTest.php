@@ -564,6 +564,78 @@ trait LogTest
         $this->assertEquals(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_key = ?', 'old-setup'));
     }
 
+    function test__setup_logging_creates_purge_index()
+    {
+        $this->assertTrue(self::$db->has_index('logs', 'updated_at_id_index'));
+
+        if (self::getCredentials()->engine === 'mysql') {
+            $this->assertSame(
+                ['updated_at', 'id'],
+                self::$db->fetch_col(
+                    'SELECT column_name FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ? ORDER BY seq_in_index',
+                    self::$credentials->database,
+                    'logs',
+                    'updated_at_id_index'
+                )
+            );
+        }
+        if (self::getCredentials()->engine === 'postgres') {
+            $index_definition = self::$db->fetch_var(
+                'SELECT indexdef FROM pg_indexes WHERE schemaname = ? AND tablename = ? AND indexname = ?',
+                'public',
+                'logs',
+                'logs_updated_at_id_index'
+            );
+            $this->assertStringContainsString('(updated_at, id)', $index_definition);
+            $this->assertStringContainsString('WHERE (updated_at IS NOT NULL)', $index_definition);
+        }
+
+        self::$db->delete_index('logs', 'updated_at_id_index');
+        $this->assertFalse(self::$db->has_index('logs', 'updated_at_id_index'));
+
+        self::$db->setup_logging();
+        $this->assertTrue(self::$db->has_index('logs', 'updated_at_id_index'));
+
+        self::$db->setup_logging();
+        $this->assertTrue(self::$db->has_index('logs', 'updated_at_id_index'));
+    }
+
+    function test__setup_logging_skips_purge_index_without_retention()
+    {
+        self::$db->delete_index('logs', 'updated_at_id_index');
+        $delete_older = self::$db->config['delete_older'];
+        unset(self::$db->config['delete_older']);
+
+        try {
+            self::$db->setup_logging();
+            $this->assertFalse(self::$db->has_index('logs', 'updated_at_id_index'));
+        } finally {
+            self::$db->config['delete_older'] = $delete_older;
+        }
+    }
+
+    function test__setup_logging_creates_purge_index_inside_postgres_transaction()
+    {
+        if (self::getCredentials()->engine !== 'postgres') {
+            $this->expectNotToPerformAssertions();
+            return;
+        }
+
+        self::$db->delete_index('logs', 'updated_at_id_index');
+        self::$db->query('BEGIN');
+
+        try {
+            self::$db->setup_logging();
+            $this->assertTrue(self::$db->has_index('logs', 'updated_at_id_index'));
+            self::$db->query('COMMIT');
+        } catch (\Throwable $exception) {
+            if (self::$db->sql->inTransaction()) {
+                self::$db->query('ROLLBACK');
+            }
+            throw $exception;
+        }
+    }
+
     function test__purge_logging_rejects_invalid_batch_sizes()
     {
         $this->expectException(\InvalidArgumentException::class);
