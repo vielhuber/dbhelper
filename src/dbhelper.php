@@ -1588,17 +1588,63 @@ class dbhelper
             $this->setup_logging_create_triggers_postgres();
         }
 
-        $this->setup_logging_delete_older();
+        $this->purge_logging();
     }
 
-    private function setup_logging_delete_older()
+    public function purge_logging(int $batch_size = 10000): int
     {
-        if (isset($this->config['delete_older']) && is_numeric($this->config['delete_older'])) {
-            $this->query(
-                'DELETE FROM ' . $this->config['logging_table'] . ' WHERE updated_at < ?',
-                date('Y-m-d', strtotime('now - ' . $this->config['delete_older'] . ' months'))
-            );
+        if ($batch_size < 1) {
+            throw new \InvalidArgumentException('batch size must be greater than zero');
         }
+        if (!isset($this->config['delete_older'])) {
+            return 0;
+        }
+
+        $delete_older = filter_var($this->config['delete_older'], FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1]
+        ]);
+        if ($delete_older === false) {
+            throw new \InvalidArgumentException('delete_older must be a positive integer');
+        }
+        if (!in_array($this->connect->engine, ['mysql', 'postgres'], true)) {
+            throw new \LogicException('logging purge is only supported for mysql and postgres');
+        }
+
+        $logging_table = $this->quote($this->config['logging_table']);
+        $cutoff = date('Y-m-d', strtotime('now - ' . $delete_older . ' months'));
+        $deleted_total = 0;
+
+        do {
+            if ($this->connect->engine === 'mysql') {
+                $deleted = $this->query(
+                    'DELETE FROM ' . $logging_table . ' WHERE updated_at < ? ORDER BY updated_at, id LIMIT ?',
+                    $cutoff,
+                    $batch_size
+                );
+            }
+            if ($this->connect->engine === 'postgres') {
+                $deleted = $this->query(
+                    'DELETE FROM ' .
+                        $logging_table .
+                        ' WHERE id IN (
+                            SELECT id
+                            FROM ' .
+                        $logging_table .
+                        '
+                            WHERE updated_at < ?
+                            ORDER BY updated_at, id
+                            LIMIT ?
+                        )',
+                    $cutoff,
+                    $batch_size
+                );
+            }
+
+            $deleted = (int) $deleted;
+            $deleted_total += $deleted;
+        } while ($deleted === $batch_size);
+
+        return $deleted_total;
     }
 
     private function setup_logging_create_table_mysql()

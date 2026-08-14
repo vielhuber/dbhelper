@@ -504,4 +504,82 @@ trait LogTest
         self::$db->insert('test', ['col1' => 'foo']);
         $this->assertGreaterThan(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_table = ?', 'test'));
     }
+
+    function test__purge_logging()
+    {
+        if (self::getCredentials()->engine === 'postgres') {
+            self::$db->query('ALTER TABLE logs DISABLE TRIGGER auto_update_updated_at_column_on_insert');
+        }
+
+        try {
+            foreach (['old-1', 'old-2', 'old-3'] as $log_key) {
+                self::$db->insert('logs', [
+                    'log_event' => 'update',
+                    'log_table' => 'test',
+                    'log_key' => $log_key,
+                    'updated_at' => '2000-01-01'
+                ]);
+            }
+            self::$db->insert('logs', [
+                'log_event' => 'update',
+                'log_table' => 'test',
+                'log_key' => 'recent',
+                'updated_at' => '2999-01-01'
+            ]);
+        } finally {
+            if (self::getCredentials()->engine === 'postgres') {
+                self::$db->query('ALTER TABLE logs ENABLE TRIGGER auto_update_updated_at_column_on_insert');
+            }
+        }
+
+        $triggers = self::$db->check_logging();
+
+        $this->assertSame(3, self::$db->purge_logging(2));
+        $this->assertEquals(['recent'], self::$db->fetch_col('SELECT log_key FROM logs ORDER BY id'));
+        $this->assertSame(0, self::$db->purge_logging(2));
+        $this->assertEquals($triggers, self::$db->check_logging());
+    }
+
+    function test__setup_logging_still_purges_old_entries()
+    {
+        if (self::getCredentials()->engine === 'postgres') {
+            self::$db->query('ALTER TABLE logs DISABLE TRIGGER auto_update_updated_at_column_on_insert');
+        }
+
+        try {
+            self::$db->insert('logs', [
+                'log_event' => 'update',
+                'log_table' => 'test',
+                'log_key' => 'old-setup',
+                'updated_at' => '2000-01-01'
+            ]);
+        } finally {
+            if (self::getCredentials()->engine === 'postgres') {
+                self::$db->query('ALTER TABLE logs ENABLE TRIGGER auto_update_updated_at_column_on_insert');
+            }
+        }
+
+        self::$db->setup_logging();
+
+        $this->assertEquals(0, self::$db->fetch_var('SELECT count(*) FROM logs WHERE log_key = ?', 'old-setup'));
+    }
+
+    function test__purge_logging_rejects_invalid_batch_sizes()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        self::$db->purge_logging(0);
+    }
+
+    function test__purge_logging_rejects_invalid_retention()
+    {
+        $delete_older = self::$db->config['delete_older'];
+        self::$db->config['delete_older'] = 0;
+
+        try {
+            $this->expectException(\InvalidArgumentException::class);
+            self::$db->purge_logging();
+        } finally {
+            self::$db->config['delete_older'] = $delete_older;
+        }
+    }
 }

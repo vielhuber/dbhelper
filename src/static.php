@@ -139,6 +139,11 @@ function db_setup_logging()
     global $db;
     return $db->setup_logging();
 }
+function db_purge_logging(int $batch_size = 10000)
+{
+    global $db;
+    return $db->purge_logging($batch_size);
+}
 function db_disable_logging()
 {
     global $db;

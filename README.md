@@ -208,7 +208,16 @@ $db->setup_logging();
 - it creates triggers for all insert/update/delete events (if not exists)
 - it deletes old logging entries based on the `delete_older` option
 
-you should run this method after a schema change (e.g. in your migrations) and you can also run it on a daily basis via cron. it is recommened to exclude blob/bytea columns.
+you should run this method after a schema change (e.g. in your migrations). it is recommended to exclude blob/bytea columns.
+
+to delete old logging entries without rebuilding all triggers, run the dedicated purge on a schedule:
+
+```php
+$deleted = $db->purge_logging(); // deletes in batches of 10,000 and returns the number of deleted rows
+$deleted = $db->purge_logging(1_000); // custom batch size
+```
+
+the purge uses the positive integer in the `delete_older` option and supports mysql and postgres. its batch size must also be a positive integer. add an index on `(updated_at, id)` to the logging table so finding each batch does not require a full table scan.
 
 the logging table has the following schema:
 
@@ -288,6 +297,8 @@ all logging methods at a glance:
 
 ```php
 $db->setup_logging(); // creates the logging table, adds updated_by to every table, (re)creates all triggers, deletes old entries
+$db->purge_logging(); // deletes old logging entries in batches without touching the triggers
+$db->purge_logging(1_000); // ... with a custom batch size, returns the total number of deleted rows
 $db->enable_auto_inject(); // fills updated_by on every insert/update and writes the log row before every delete, for this connection
 $db->check_logging(); // returns which triggers are missing or switched off, both lists empty means everything is fine
 $db->check_logging(['table1']); // ... only for the given tables
