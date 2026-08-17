@@ -12,6 +12,8 @@ class dbhelper
 
     public array $config = [];
 
+    private bool $transactionActive = false;
+
     public function __construct(array $config = [])
     {
         $this->config = $config;
@@ -96,6 +98,7 @@ class dbhelper
         $connect->password = $password;
         $connect->port = $port;
         $this->connect = $connect;
+        $this->transactionActive = false;
     }
 
     public function create_database(string $database)
@@ -196,6 +199,71 @@ class dbhelper
             case 'wordpress':
                 // TODO
                 break;
+        }
+        $this->transactionActive = false;
+    }
+
+    /**
+     * Start a transaction without exposing the underlying database connection.
+     */
+    public function begin_transaction(): bool
+    {
+        $this->assert_transaction_support();
+        if ($this->connect->driver === 'mysqli') {
+            $result = $this->sql->begin_transaction();
+            if ($result) {
+                $this->transactionActive = true;
+            }
+            return $result;
+        }
+        return $this->sql->beginTransaction();
+    }
+
+    /**
+     * Persist all changes made in the active transaction.
+     */
+    public function commit(): bool
+    {
+        $this->assert_transaction_support();
+        $result = $this->sql->commit();
+        if ($result && $this->connect->driver === 'mysqli') {
+            $this->transactionActive = false;
+        }
+        return $result;
+    }
+
+    /**
+     * Discard all changes made in the active transaction.
+     */
+    public function rollback(): bool
+    {
+        $this->assert_transaction_support();
+        $result = $this->sql->rollBack();
+        if ($result && $this->connect->driver === 'mysqli') {
+            $this->transactionActive = false;
+        }
+        return $result;
+    }
+
+    /**
+     * Check whether the connection currently has an active transaction.
+     */
+    public function in_transaction(): bool
+    {
+        $this->assert_transaction_support();
+        if ($this->connect->driver === 'mysqli') {
+            return $this->transactionActive;
+        }
+        return $this->sql->inTransaction();
+    }
+
+    /**
+     * Reject transaction handling for drivers without a reliable transaction API.
+     */
+    private function assert_transaction_support(): void
+    {
+        if (!in_array($this->connect->driver, ['pdo', 'mysqli'], true)) {
+            throw new \LogicException('transactions are only supported for pdo and mysqli connections');
         }
     }
 
@@ -1685,7 +1753,7 @@ class dbhelper
             );
         }
         if ($this->connect->engine === 'postgres') {
-            $concurrently = $this->sql instanceof PDO && !$this->sql->inTransaction();
+            $concurrently = $this->sql instanceof PDO && !$this->in_transaction();
             $this->query(
                 'CREATE INDEX ' .
                     ($concurrently ? 'CONCURRENTLY ' : '') .

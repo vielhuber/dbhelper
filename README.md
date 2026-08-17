@@ -47,6 +47,18 @@ $db->connect('pdo', 'mysql', '127.0.0.1', 'username', 'password', null, 3306); /
 /* disconnect from database */
 $db->disconnect();
 
+/* transactions */
+$db->begin_transaction();
+try {
+    $db->insert('tablename', ['col1' => 'foo']);
+    $db->commit();
+} catch (\Throwable $exception) {
+    if ($db->in_transaction()) {
+        $db->rollback();
+    }
+    throw $exception;
+}
+
 /* insert/update/delete */
 $id = $db->insert('tablename', ['col1' => 'foo']);
 $db->update('tablename', ['col1' => 'bar'], ['id' => $id]);

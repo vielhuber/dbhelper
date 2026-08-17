@@ -622,15 +622,15 @@ trait LogTest
         }
 
         self::$db->delete_index('logs', 'updated_at_id_index');
-        self::$db->query('BEGIN');
+        self::$db->begin_transaction();
 
         try {
             self::$db->setup_logging();
             $this->assertTrue(self::$db->has_index('logs', 'updated_at_id_index'));
-            self::$db->query('COMMIT');
+            self::$db->commit();
         } catch (\Throwable $exception) {
-            if (self::$db->sql->inTransaction()) {
-                self::$db->query('ROLLBACK');
+            if (self::$db->in_transaction()) {
+                self::$db->rollback();
             }
             throw $exception;
         }

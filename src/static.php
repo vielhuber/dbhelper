@@ -84,6 +84,26 @@ function db_disconnect()
     global $db;
     return $db->disconnect();
 }
+function db_begin_transaction(): bool
+{
+    global $db;
+    return $db->begin_transaction();
+}
+function db_commit(): bool
+{
+    global $db;
+    return $db->commit();
+}
+function db_rollback(): bool
+{
+    global $db;
+    return $db->rollback();
+}
+function db_in_transaction(): bool
+{
+    global $db;
+    return $db->in_transaction();
+}
 function db_clear(?string $table = null)
 {
     global $db;

@@ -53,6 +53,23 @@ trait BasicTest
         );
     }
 
+    function test__transactions()
+    {
+        $this->assertFalse(self::$db->in_transaction());
+        $this->assertTrue(self::$db->begin_transaction());
+        $this->assertTrue(self::$db->in_transaction());
+        self::$db->insert('test', ['col1' => 'rollback']);
+        $this->assertTrue(self::$db->rollback());
+        $this->assertFalse(self::$db->in_transaction());
+        $this->assertSame(0, self::$db->count('test', ['col1' => 'rollback']));
+
+        $this->assertTrue(self::$db->begin_transaction());
+        self::$db->insert('test', ['col1' => 'commit']);
+        $this->assertTrue(self::$db->commit());
+        $this->assertFalse(self::$db->in_transaction());
+        $this->assertSame(1, self::$db->count('test', ['col1' => 'commit']));
+    }
+
     function test__create_index()
     {
         self::$db->create_index('test', 'test_col1', ['col1']);
