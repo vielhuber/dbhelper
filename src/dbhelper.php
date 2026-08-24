@@ -2575,6 +2575,8 @@ class dbhelper
                 } elseif (strpos(substr($return, $pos - 5, 6), '= ?') !== false) {
                     $return =
                         substr($return, 0, $pos - 5) . preg_replace('/= \?/', 'IS NULL', substr($return, $pos - 5), 1);
+                } else {
+                    $return = substr($return, 0, $pos) . 'NULL' . substr($return, $pos + 1);
                 }
             }
             // case 2: in all other cases, convert ? to NULL

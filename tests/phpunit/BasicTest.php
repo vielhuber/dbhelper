@@ -300,6 +300,15 @@ trait BasicTest
             'col2' => null,
             'col3' => 'bar'
         ]);
+        $this->assertSame(
+            'bar',
+            self::$db->fetch_var(
+                'SELECT col3 FROM test WHERE (? IS NULL OR col1 = ?) AND id = ?',
+                null,
+                null,
+                $id
+            )
+        );
     }
 
     function test__batch()
