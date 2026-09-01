@@ -2233,9 +2233,9 @@ class dbhelper
                 $this->config['logging_table'] .
                 ' WHERE log_event = \'delete\' AND log_table = \'' .
                 $table__value .
-                '\' AND log_key = OLD.' .
+                '\' AND log_key = BINARY CAST(OLD.' .
                 $this->quote($primary_key) .
-                ' ) ) THEN
+                ' AS CHAR) ) ) THEN
                         INSERT INTO ' .
                 $this->config['logging_table'] .
                 '(log_event,log_table,log_key,log_column,log_value,log_uuid,updated_by)
