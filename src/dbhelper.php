@@ -1657,7 +1657,7 @@ class dbhelper
             $this->setup_logging_create_triggers_postgres();
         }
 
-        $this->setup_logging_create_purge_index();
+        $this->setup_logging_indexes();
         $this->purge_logging();
     }
 
@@ -1727,49 +1727,54 @@ class dbhelper
         return $delete_older;
     }
 
-    private function setup_logging_create_purge_index(): void
+    public function setup_logging_indexes(): void
     {
-        if ($this->logging_retention_months() === null) {
-            return;
-        }
-
         $logging_table = $this->config['logging_table'];
-        $index = 'updated_at_id_index';
-        if ($this->has_index($logging_table, $index)) {
-            return;
+        $indexes = ['updated_by_index' => ['updated_by']];
+        if ($this->logging_retention_months() !== null) {
+            $indexes['updated_at_id_index'] = ['updated_at', 'id'];
         }
 
-        $index = $this->index_name($logging_table, $index);
-        if ($this->connect->engine === 'mysql') {
-            $this->query(
-                'CREATE INDEX ' .
-                    $this->quote($index) .
-                    ' ON ' .
-                    $this->quote($logging_table) .
-                    ' (' .
-                    $this->quote('updated_at') .
-                    ', ' .
-                    $this->quote('id') .
-                    ')'
+        foreach ($indexes as $index => $columns) {
+            if ($this->has_index($logging_table, $index)) {
+                continue;
+            }
+            $column_query = implode(
+                ', ',
+                array_map(
+                    fn(string $column) => $this->quote($column) .
+                        ($this->connect->engine === 'mysql' && $column === 'updated_by' ? '(100)' : ''),
+                    $columns
+                )
             );
-        }
-        if ($this->connect->engine === 'postgres') {
-            $concurrently = $this->sql instanceof PDO && !$this->in_transaction();
-            $this->query(
-                'CREATE INDEX ' .
-                    ($concurrently ? 'CONCURRENTLY ' : '') .
-                    'IF NOT EXISTS ' .
-                    $this->quote($index) .
-                    ' ON ' .
-                    $this->quote($logging_table) .
-                    ' (' .
-                    $this->quote('updated_at') .
-                    ', ' .
-                    $this->quote('id') .
-                    ') WHERE ' .
-                    $this->quote('updated_at') .
-                    ' IS NOT NULL'
-            );
+            $index = $this->index_name($logging_table, $index);
+            if ($this->connect->engine === 'mysql') {
+                $this->query(
+                    'CREATE INDEX ' .
+                        $this->quote($index) .
+                        ' ON ' .
+                        $this->quote($logging_table) .
+                        ' (' .
+                        $column_query .
+                        ')'
+                );
+            }
+            if ($this->connect->engine === 'postgres') {
+                $concurrently = $this->sql instanceof PDO && !$this->in_transaction();
+                $this->query(
+                    'CREATE INDEX ' .
+                        ($concurrently ? 'CONCURRENTLY ' : '') .
+                        'IF NOT EXISTS ' .
+                        $this->quote($index) .
+                        ' ON ' .
+                        $this->quote($logging_table) .
+                        ' (' .
+                        $column_query .
+                        ') WHERE ' .
+                        $this->quote($columns[0]) .
+                        ' IS NOT NULL'
+                );
+            }
         }
     }
 

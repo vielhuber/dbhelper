@@ -161,6 +161,11 @@ function db_setup_logging()
     global $db;
     return $db->setup_logging();
 }
+function db_setup_logging_indexes(): void
+{
+    global $db;
+    $db->setup_logging_indexes();
+}
 function db_purge_logging(int $batch_size = 10000)
 {
     global $db;

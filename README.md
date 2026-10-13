@@ -213,15 +213,24 @@ $db->connect('...');
 $db->setup_logging();
 ```
 
-`setup_logging()` does four things:
+`setup_logging()` does the following:
 
 - it creates a logging table (if not exists)
 - it appends a single column `updated_by` to every table in the database (if not exists)
 - it creates triggers for all insert/update/delete events (if not exists)
+- it creates an index on `updated_by`
 - it creates an index on `(updated_at, id)` when `delete_older` is configured
 - it deletes old logging entries based on the `delete_older` option
 
 you should run this method after a schema change (e.g. in your migrations). it is recommended to exclude blob/bytea columns.
+
+to add missing indexes to an existing logging table without rebuilding triggers or deleting log entries, run:
+
+```php
+$db->setup_logging_indexes();
+```
+
+this method is also called by `setup_logging()` and does not recreate existing indexes. on mysql, the `updated_by` index covers the first 100 characters so legacy wider columns remain supported without changing their values. on postgres, logging indexes are partial and created concurrently outside transactions.
 
 to delete old logging entries without rebuilding all triggers, run the dedicated purge on a schedule:
 
@@ -310,6 +319,7 @@ all logging methods at a glance:
 
 ```php
 $db->setup_logging(); // creates the logging table, adds updated_by to every table, (re)creates all triggers, deletes old entries
+$db->setup_logging_indexes(); // adds missing logging indexes without changing triggers or log entries
 $db->purge_logging(); // deletes old logging entries in batches without touching the triggers
 $db->purge_logging(1_000); // ... with a custom batch size, returns the total number of deleted rows
 $db->enable_auto_inject(); // fills updated_by on every insert/update and writes the log row before every delete, for this connection
