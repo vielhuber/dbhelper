@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace vielhuber\dbhelper;
 
@@ -1428,8 +1429,8 @@ class dbhelper
                     $id = $result__value[$this->get_primary_key($tables__value)];
                     foreach ($result__value as $result__value__key => $result__value__value) {
                         if (
-                            !preg_match('/^ .+$/', $result__value__value) &&
-                            !preg_match('/^.+ $/', $result__value__value)
+                            !preg_match('/^ .+$/', (string) $result__value__value) &&
+                            !preg_match('/^.+ $/', (string) $result__value__value)
                         ) {
                             continue;
                         }

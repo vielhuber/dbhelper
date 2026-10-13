@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 function db_connect(mixed ...$args)
 {
     global $db;
