@@ -2394,12 +2394,15 @@ class dbhelper
                     ) {
                         return $carry;
                     }
+                    $comparisonCast = $this->get_datatype($table__value, $column) === 'json' ? '::text' : '';
                     $carry .=
                         '
                             IF (OLD.' .
                         $this->quote($column) .
+                        $comparisonCast .
                         ' <> NEW.' .
                         $this->quote($column) .
+                        $comparisonCast .
                         ') OR (OLD.' .
                         $this->quote($column) .
                         ' IS NULL AND NEW.' .
